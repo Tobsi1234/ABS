@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+        <!-- JQuery -->
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+
+        <!-- Vue.js development version, includes helpful console warnings -->
+        <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+        <script src="https://unpkg.com/vue"></script>
+
+        <script src="https://unpkg.com/vuejs-datepicker"></script>
+        <script src="bootstrap-notify.min.js"></script>
+
+        <link rel="stylesheet" type="text/css" href"CSS/myCSS.css">
+
+        <title>ABS</title>
+    </head>
+    <body>
+        <script>
+             var currentSite = "events"    
+        </script>
+        <nav id="navBar" class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container">
+                <a class="navbar-brand" href="#" onclick="return follow(this);">ABS</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item" v-bind:class="{active: currentSite === 'events'}">
+                            <a class="nav-link" href="#events" onclick="return follow(this);">Veranstaltungen</a>
+                        </li>
+                        <li class="nav-item" v-bind:class="{active: currentSite === 'settings'}">
+                            <a class="nav-link" href="#settings" onclick="return follow(this);">Einstellungen</a>
+                        </li>
+                        <li class="nav-item" v-bind:class="{active: currentSite === 'user'}">
+                            <a class="nav-link" href="#user" onclick="return follow(this);">User</a>
+                        </li>
+                    </ul>
+                </div>
+                <p v-if="sessionUser" class="navbar-link active my-2 my-lg-0"> {{ sessionUser }} ({{ selectedGroup }})</p>
+            </div>
+        </nav>
+        <div class="container">
+            <div id="includePage" style="padding-top: 20px;"></div>            
+        </div>
+
+        <script>
+      
+            var navbar = new Vue({
+                el: '#navBar',
+                data: {
+                    currentSite: 'home',
+                    sessionUser: '',
+                    selectedGroup: ''
+                }
+            })
+
+            $(function(){
+                // include correct page on reload
+                includePageOnLoad();
+            });
+
+            $(window).bind('hashchange', function() {
+                // include correct page on browser's back-button
+                includePageOnLoad();
+            });
+
+            function includePageOnLoad() {
+                var url = window.location.href;
+                var href = url.split('#')[1];
+                $.post("/api/session", {}, function(result){
+                    if(result != '') {
+                        navbar.sessionUser = result[0];
+                        navbar.selectedGroup = result[1];
+                    }
+                });
+                includePage(href);
+            }
+
+            function follow(item) {
+                includePage(item.getAttribute('href').split('#')[1]);
+            }
+
+            function includePage(href) {
+                if(href != undefined && href != '' && href != '#') {
+                    if(href === 'events') {
+                        $("#includePage").load("pages/events.html");
+                    } else if(href === 'settings') {
+                        $("#includePage").load("pages/settings.html");
+                    } else if(href === 'user') {
+                        $("#includePage").load("pages/user.html");
+                    } else {
+                        $("#includePage").load("pages/home.html");
+                        href = "home";
+                    }
+                    navbar.currentSite = href;
+                } else {
+                    $("#includePage").load("pages/home.html");
+                    navbar.currentSite = "home";
+                }
+            }
+
+            function notify(message) {
+                $.notify({
+                    message: message
+                }, {
+                    delay: 1000
+                });
+            }
+            
+        </script>
+
+
+        <!-- Optional JavaScript -->
+        <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    </body>
+</html>
