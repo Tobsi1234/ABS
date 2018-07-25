@@ -42,6 +42,6 @@ app.get(['/','/index.html'], function (req, res) {
 
 
  //start express server (application) on port 8080 and log announce to console
-var server = app.listen(8080, '0.0.0.0', function () {
+var server = app.listen(process.env.PORT || 8080, '0.0.0.0', function () {
     console.log('Express App listening at http://localhost:8080');
 });
