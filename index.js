@@ -2,6 +2,7 @@ var express = require('express');
 var app = express();
 var session = require('express-session')
 var bodyParser = require('body-parser');
+var MemoryStore = require('session-memory-store')(session);
 
 var router = require('./backendAPI');
 
@@ -10,7 +11,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
     extended: true
 }));
-app.use(session({ secret: 'this-is-a-secret-token', saveUninitialized: true, resave: true, cookie: { maxAge: 60 * 60 * 1000 }}));
+app.use(session({name: 'JSESSION', secret: 'this-is-a-secret-token', saveUninitialized: true, resave: true, store: new MemoryStore()}));
 app.use(express.static('plugin'));
 
 //for /api use backendAPI router
