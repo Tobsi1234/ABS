@@ -12,7 +12,7 @@ app.use(bodyParser.urlencoded({
     extended: true
 }));
 app.use(session({name: 'JSESSION', secret: 'this-is-a-secret-token', saveUninitialized: true, resave: true, store: new MemoryStore()}));
-app.use(express.static('plugin'));
+app.use(express.static('public'));
 
 //for /api use backendAPI router
 app.use('/api', router);

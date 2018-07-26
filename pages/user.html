@@ -1,23 +1,23 @@
 <div id="user">
     <br>
     <div v-if="!sessionUser">
-        <input v-model="loginUser" placeholder="Enter your username">
-        <input v-model="password" placeholder="Enter your password">
-        <button v-on:click="login">Login</button>
+        <input id="username" type="text" v-model="loginUser" placeholder="Enter your username">
+        <input id="password" type="password" name="password" v-model="password" placeholder="Enter your password">
+        <button v-on:click="login" class="btn btn-primary btn-sm custom-buttons">Login</button>
         <br><br>
         <input v-model="newUser" placeholder="Enter new username">
         <input v-model="newPassword" placeholder="Enter new password">
-        <button v-on:click="registerUser">Registrieren</button>
+        <button v-on:click="registerUser" class="btn btn-primary btn-sm custom-buttons">Registrieren</button>
     </div>
     <div v-if="sessionUser">
         <h2>Eingeloggt als {{ sessionUser }}</h2>        
-        <button v-on:click="logout">Logout</button>
+        <button v-on:click="logout" class="btn btn-primary btn-sm">Logout</button>
         <br><br>
         <input v-model="newGroupName" placeholder="Gruppennamen eingeben">
-        <button v-on:click="createGroup">Neue Gruppe erstellen</button>
+        <button v-on:click="createGroup" class="btn btn-outline-primary btn-sm custom-buttons">Neue Gruppe erstellen</button>
         <br><br>
         <input v-model="groupName" placeholder="Gruppennamen eingeben">
-        <button v-on:click="enterGroup">Gruppe beitreten</button>
+        <button v-on:click="enterGroup" class="btn btn-outline-primary btn-sm custom-buttons">Gruppe beitreten</button>
         <br><br>
 
         <select v-model="selectedGroup" @change="selectGroup">

@@ -20,7 +20,7 @@
                 <br><br>
                 <label>Neues Event anlegen: </label>
                 <input v-model="newEventName" placeholder="Name des Events eingeben">
-                <button v-on:click="addEvent" class="btn btn-outline-primary btn-sm" style="margin-bottom: 5px">Event erstellen</button><br><br>
+                <button v-on:click="addEvent" class="btn btn-outline-primary btn-sm custom-buttons">Event erstellen</button><br><br>
                 <h4>Bevorstehende Veranstaltungen der Gruppe</h4>
                 <ul>
                     <li v-for="event in futureEvents">
@@ -70,7 +70,6 @@
                                 <input type="radio" :id="choice.title" :value="choice.title" v-model="checkedChoice">
                                 <label :for="choice.title">{{ choice.title }}</label>
                             </div>
-                            {{checkedChoice}}
                             <button v-on:click="saveCheckedChoice(voting)" class="btn btn-primary btn-sm">Speichern</button>
                         </div>
                     </div>
@@ -80,7 +79,7 @@
                 <label>Neue Abstimmung anlegen: </label>
                 <input v-model="newVotingName" placeholder="Name der Abstimmung eingeben">
                 <!-- input: select type type -->
-                <button v-on:click="addVoting" class="btn btn-outline-primary btn-sm" style="margin-bottom: 5px">Abstimmung erstellen</button>
+                <button v-on:click="addVoting" class="btn btn-outline-primary btn-sm custom-buttons">Abstimmung erstellen</button>
 
                 <div class="modal fade" id="editVotingModal" tabindex="-1" role="dialog" aria-labelledby="editVotingModelLabel" aria-hidden="true">
                     <div class="modal-dialog" role="document">
