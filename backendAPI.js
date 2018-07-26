@@ -197,11 +197,15 @@ router.post('/saveEvent', function(req, res) {
     }
 });
 
+// saves new title of event in GroupEvents and updates GroupVotings accordingly.
 router.post('/saveNewTitle', function(req, res) {
     if(req.session.username != null && req.session.selectedGroup != null) {
-        GroupEvents.update({'details._id': req.body.eventId}, {$set:  {'details.$.title': req.body.newTitle}}, function(err, doc) {
-            if(err) return res.send("SaveEvent(): Unknown error.");
-            res.send("Event wurde aktualisiert.");
+        GroupEvents.update({'details._id': req.body.selectedEvent._id}, {$set:  {'details.$.title': req.body.newTitle}}, function(err, doc) {
+            if(err) return res.send("SaveNewTitle(): Unknown error.");
+            GroupVotings.update({groupName: req.session.selectedGroup, 'events.title': req.body.selectedEvent.title, 'events.created': req.body.selectedEvent.created}, {$set: {'events.$.title': req.body.newTitle} }, function(err, doc) {
+                if(err) return res.send("SaveNewTitle()2: Unknown error.");
+                res.send("Event wurde aktualisiert.");
+            });
         });
     }
 });

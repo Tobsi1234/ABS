@@ -1,6 +1,7 @@
 
 var mongoose = require('mongoose');
 mongoose.connect(process.env.MONGODB_URI);
+//local: 'mongodb://localhost/test2'
 
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
@@ -30,7 +31,6 @@ var GroupEvents = mongoose.model('GroupEvents', eventSchema);
 var votingSchema = mongoose.Schema({
     groupName: String,
     events: [{
-        _id: String, // better for searching instead of ObjectId
         title: String,
         created: Date, // Creation date of event, not of voting
         votings: [{
