@@ -2,3 +2,10 @@
 .custom-buttons {
     margin-bottom: 4px;
 }
+
+#messagesDiv {
+    border: 1px solid #007bff;
+    height: 500px;
+    padding-top: 20px;
+    border-radius: 10px
+}

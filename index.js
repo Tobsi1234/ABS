@@ -1,8 +1,21 @@
 var express = require('express');
 var app = express();
+var http = require('http').Server(app);
 var session = require('express-session')
 var bodyParser = require('body-parser');
 var MemoryStore = require('session-memory-store')(session);
+var io = require('socket.io')(http);
+
+io.on('connection', function(socket){
+    console.log('a user connected');
+    socket.on('disconnect', function(){
+        console.log('user disconnected');
+    });
+    socket.on('chat message', function(msg){
+        console.log('message: ' + msg);
+        io.emit('chat message', msg);
+    });
+});
 
 var router = require('./backendAPI');
 
@@ -43,6 +56,6 @@ app.get(['/','/index.html'], function (req, res) {
 
 
  //start express server (application) on port 8080 and log announce to console
-var server = app.listen(process.env.PORT || 8080, '0.0.0.0', function () {
+var server = http.listen(process.env.PORT || 8080, '0.0.0.0', function () {
     console.log('Express App listening at http://localhost:8080');
 });

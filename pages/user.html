@@ -40,7 +40,7 @@
     var userView = new Vue({
         el: '#user',
         data: {
-            sessionUser: navbar.sessionUser,
+            sessionUser: indexSite.sessionUser,
             newUser: '',
             newPassword: '',
             loginUser: '',
@@ -48,7 +48,7 @@
             newGroup: '',
             groupName: '',
             newGroupName: '',
-            selectedGroup: navbar.selectedGroup,
+            selectedGroup: indexSite.selectedGroup,
             groups: []
         },
         methods: {
@@ -73,7 +73,7 @@
                     $.post("/api/login", {username: loginUser, password: password}, function(result){
                         if(result == "OK") {
                             userView.sessionUser = loginUser;
-                            navbar.sessionUser = loginUser;
+                            indexSite.sessionUser = loginUser;
                             userView.getGroupsOfSessionUser();
                         } else {
                             notify("Login fehlgeschlagen: " + result);
@@ -84,9 +84,9 @@
             },
             logout: function() {
                 userView.sessionUser = '';
-                navbar.sessionUser = '';
+                indexSite.sessionUser = '';
                 userView.selectedGroup = '';
-                navbar.selectedGroup = '';
+                indexSite.selectedGroup = '';
                 $.post("/api/logout", {}, function(result){
                 });
             },
@@ -114,7 +114,7 @@
                 $.post("/api/exitGroup", {}, function(result){
                     notify("ExitGroup: " + result);
                 });
-                navbar.selectedGroup = "";
+                indexSite.selectedGroup = "";
                 userView.selectedGroup = "";
             },
             getGroupsOfSessionUser: function() {
@@ -125,13 +125,13 @@
             selectGroup: function() {
                 $.post("/api/selectGroup", {selectedGroup: userView.selectedGroup}, function(result){
                 });
-                navbar.selectedGroup = userView.selectedGroup;
+                indexSite.selectedGroup = userView.selectedGroup;
             }
 
         }
     })
 
-    if(navbar.sessionUser != '') {
+    if(indexSite.sessionUser != '') {
         userView.getGroupsOfSessionUser();
     }
 

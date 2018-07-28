@@ -21,45 +21,58 @@
         <title>ABS</title>
     </head>
     <body>
-        <script>
-             var currentSite = "events"    
-        </script>
-        <nav id="navBar" class="navbar navbar-expand-lg navbar-light bg-light">
-            <div class="container">
-                <a class="navbar-brand" href="#" onclick="return follow(this);">ABS</a>
-                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav">
-                        <li class="nav-item" v-bind:class="{active: currentSite === 'events'}">
-                            <a class="nav-link" href="#events" onclick="return follow(this);">Veranstaltungen</a>
-                        </li>
-                        <li class="nav-item" v-bind:class="{active: currentSite === 'settings'}">
-                            <a class="nav-link" href="#settings" onclick="return follow(this);">Einstellungen</a>
-                        </li>
-                        <li class="nav-item" v-bind:class="{active: currentSite === 'user'}">
-                            <a class="nav-link" href="#user" onclick="return follow(this);">User</a>
-                        </li>
-                    </ul>
+        <div id="indexSite">
+            <nav id="navBar" class="navbar navbar-expand-lg navbar-light bg-light">
+                <div class="container">
+                    <a class="navbar-brand" href="#" onclick="return follow(this);">ABS</a>
+                    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav">
+                            <li class="nav-item" v-bind:class="{active: currentSite === 'events'}">
+                                <a class="nav-link" href="#events" onclick="return follow(this);">Veranstaltungen</a>
+                            </li>
+                            <li class="nav-item" v-bind:class="{active: currentSite === 'settings'}">
+                                <a class="nav-link" href="#settings" onclick="return follow(this);">Einstellungen</a>
+                            </li>
+                            <li class="nav-item" v-bind:class="{active: currentSite === 'user'}">
+                                <a class="nav-link" href="#user" onclick="return follow(this);">User</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <p v-if="sessionUser" class="navbar-link active my-2 my-lg-0"> {{ sessionUser }} ({{ selectedGroup }})</p>
                 </div>
-                <p v-if="sessionUser" class="navbar-link active my-2 my-lg-0"> {{ sessionUser }} ({{ selectedGroup }})</p>
+            </nav>
+            <div id="container" class="container">
+                <div class="row" style="padding-top: 20px;">
+                    <div id="includePage" class="col-12 col-md-6"></div>
+                    <div id="chat" v-if="sessionUser" class="col-12 col-md-6">
+                        <div id="messagesDiv">
+                            <ul id="messages"></ul>
+                        </div>
+                        <hr>
+                        <div id="inputDiv">
+                            <form action="">
+                                <input id="m" autocomplete="off" style="width: calc(100% - 75px)"/>
+                                <button class="btn btn-outline-primary btn-sm" style="float:right;">Senden</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>      
             </div>
-        </nav>
-        <div class="container">
-            <div id="includePage" style="padding-top: 20px;"></div>            
         </div>
 
         <script>
       
-            var navbar = new Vue({
-                el: '#navBar',
+            var indexSite = new Vue({
+                el: '#indexSite',
                 data: {
                     currentSite: 'home',
                     sessionUser: '',
                     selectedGroup: ''
                 }
-            })
+            });
 
             $(function(){
                 // include correct page on reload
@@ -76,8 +89,8 @@
                 var href = url.split('#')[1];
                 $.post("/api/session", {}, function(result){
                     if(result != '') {
-                        navbar.sessionUser = result[0];
-                        navbar.selectedGroup = result[1];
+                        indexSite.sessionUser = result[0];
+                        indexSite.selectedGroup = result[1];
                     }
                 });
                 includePage(href);
@@ -99,10 +112,10 @@
                         $("#includePage").load("pages/home.html");
                         href = "home";
                     }
-                    navbar.currentSite = href;
+                    indexSite.currentSite = href;
                 } else {
                     $("#includePage").load("pages/home.html");
-                    navbar.currentSite = "home";
+                    indexSite.currentSite = "home";
                 }
             }
 
@@ -116,7 +129,28 @@
             
         </script>
 
-
+        <script src="js/socket.io.js"></script>
+        <script>
+            function htmlEncode(value){
+            //create a in-memory div, set it's inner text(which jQuery automatically encodes)
+            //then grab the encoded contents back out.  The div never exists on the page.
+            return $('<div/>').text(value).html();
+            }
+            $(function () {
+                var socket = io();
+                $('form').submit(function(){
+                    var userInput = $('<div/>').text($('#m').val()).html(); // encode user input
+                    var message = "<b>" + indexSite.sessionUser + "</b>: " + userInput;
+                    socket.emit('chat message', message);
+                    $('#m').val('');
+                    return false;
+                });
+                socket.on('chat message', function(msg){
+                    $('#messages').append("<div>"+msg+"</div>");
+                });
+            });
+            
+        </script>
         <!-- Optional JavaScript -->
         <!-- jQuery first, then Popper.js, then Bootstrap JS -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
