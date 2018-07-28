@@ -137,8 +137,8 @@
     var eventsView = new Vue({
         el: '#events',
         data: {
-            sessionUser: indexSite.sessionUser,
-            selectedGroup: indexSite.selectedGroup,
+            sessionUser: navbar.sessionUser,
+            selectedGroup: navbar.selectedGroup,
             groups: [],
             newEventName: '',
             futureEvents: [],
@@ -168,7 +168,7 @@
                     eventsView.getEventsOfSelectedGroup();
                     eventsView.selectedEvent = '';
                 });
-                indexSite.selectedGroup = eventsView.selectedGroup;
+                navbar.selectedGroup = eventsView.selectedGroup;
             },
             addEvent: function() {
                 if(eventsView.newEventName.trim() != "") {
@@ -307,7 +307,7 @@
             preselectChoice: function(selectedVoting) {
                 selectedVoting.choices.forEach(choice => {
                     choice.users.forEach(user => {
-                        if(user === indexSite.sessionUser) {
+                        if(user === navbar.sessionUser) {
                             eventsView.checkedChoice = choice.title;
                         }
                     });
@@ -333,9 +333,9 @@
         }
     });
 
-    if(indexSite.sessionUser != '') {
+    if(navbar.sessionUser != '') {
         eventsView.getGroupsOfSessionUser();
-        if(indexSite.selectedGroup != null && indexSite.selectedGroup != "") {
+        if(navbar.selectedGroup != null && navbar.selectedGroup != "") {
             eventsView.getEventsOfSelectedGroup();
         }
     }

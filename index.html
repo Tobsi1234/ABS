@@ -21,56 +21,68 @@
         <title>ABS</title>
     </head>
     <body>
-        <div id="indexSite">
-            <nav id="navBar" class="navbar navbar-expand-lg navbar-light bg-light">
-                <div class="container">
-                    <a class="navbar-brand" href="#" onclick="return follow(this);">ABS</a>
-                    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
-                    <div class="collapse navbar-collapse" id="navbarNav">
-                        <ul class="navbar-nav">
-                            <li class="nav-item" v-bind:class="{active: currentSite === 'events'}">
-                                <a class="nav-link" href="#events" onclick="return follow(this);">Veranstaltungen</a>
-                            </li>
-                            <li class="nav-item" v-bind:class="{active: currentSite === 'settings'}">
-                                <a class="nav-link" href="#settings" onclick="return follow(this);">Einstellungen</a>
-                            </li>
-                            <li class="nav-item" v-bind:class="{active: currentSite === 'user'}">
-                                <a class="nav-link" href="#user" onclick="return follow(this);">User</a>
-                            </li>
-                        </ul>
-                    </div>
-                    <p v-if="sessionUser" class="navbar-link active my-2 my-lg-0"> {{ sessionUser }} ({{ selectedGroup }})</p>
+        <nav id="navBar" class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container">
+                <a class="navbar-brand" href="#" onclick="return follow(this);">ABS</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item" v-bind:class="{active: currentSite === 'events'}">
+                            <a class="nav-link" href="#events" onclick="return follow(this);">Veranstaltungen</a>
+                        </li>
+                        <li class="nav-item" v-bind:class="{active: currentSite === 'settings'}">
+                            <a class="nav-link" href="#settings" onclick="return follow(this);">Einstellungen</a>
+                        </li>
+                        <li class="nav-item" v-bind:class="{active: currentSite === 'user'}">
+                            <a class="nav-link" href="#user" onclick="return follow(this);">User</a>
+                        </li>
+                    </ul>
                 </div>
-            </nav>
-            <div id="container" class="container">
-                <div class="row" style="padding-top: 20px;">
-                    <div id="includePage" class="col-12 col-md-6"></div>
-                    <div id="chat" v-if="sessionUser" class="col-12 col-md-6">
-                        <div id="messagesDiv">
-                            <ul id="messages"></ul>
-                        </div>
-                        <hr>
-                        <div id="inputDiv">
-                            <form action="">
-                                <input id="m" autocomplete="off" style="width: calc(100% - 75px)"/>
-                                <button class="btn btn-outline-primary btn-sm" style="float:right;">Senden</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>      
+                <p v-if="sessionUser" class="navbar-link active my-2 my-lg-0"> {{ sessionUser }} ({{ selectedGroup }})</p>
             </div>
+        </nav>
+        <div id="indexSite" class="container">
+            <div class="row" style="padding-top: 20px;">
+                <div id="includePage" class="col-12 col-md-6"></div>
+                <div id="chat" v-if="sessionUser" class="col-12 col-md-6">
+                    <div id="messagesDiv">
+                        <ul id="messages"></ul>
+                    </div>
+                    <hr>
+                    <div id="inputDiv">
+                        <input id="m" autocomplete="off" style="width: calc(100% - 75px)"/>
+                        <button v-on:click="sendMessage()" class="btn btn-outline-primary btn-sm" style="float:right;">Senden</button>
+                    </div>
+                </div>
+            </div>      
         </div>
 
+        <script src="js/socket.io.js"></script>
         <script>
-      
-            var indexSite = new Vue({
-                el: '#indexSite',
+            var socket = io();
+            var navbar = new Vue({
+                el: '#navBar',
                 data: {
                     currentSite: 'home',
                     sessionUser: '',
                     selectedGroup: ''
+                }
+            });
+
+            var indexSite = new Vue({
+                el: '#indexSite',
+                data: {
+                    sessionUser: ''
+                },
+                methods: {
+                    sendMessage: function() {
+                        var userInput = $('<div/>').text($('#m').val()).html(); // encode user input
+                        var message = "<b>" + indexSite.sessionUser + "</b>: " + userInput;
+                        socket.emit('chat message', message);
+                        $('#m').val('');
+                    }
                 }
             });
 
@@ -89,8 +101,9 @@
                 var href = url.split('#')[1];
                 $.post("/api/session", {}, function(result){
                     if(result != '') {
-                        indexSite.sessionUser = result[0];
-                        indexSite.selectedGroup = result[1];
+                        navbar.sessionUser = result[0];
+                        navbar.selectedGroup = result[1];
+                        indexSite.sessionUser = navbar.sessionUser;
                     }
                 });
                 includePage(href);
@@ -112,10 +125,10 @@
                         $("#includePage").load("pages/home.html");
                         href = "home";
                     }
-                    indexSite.currentSite = href;
+                    navbar.currentSite = href;
                 } else {
                     $("#includePage").load("pages/home.html");
-                    indexSite.currentSite = "home";
+                    navbar.currentSite = "home";
                 }
             }
 
@@ -129,22 +142,9 @@
             
         </script>
 
-        <script src="js/socket.io.js"></script>
         <script>
-            function htmlEncode(value){
-            //create a in-memory div, set it's inner text(which jQuery automatically encodes)
-            //then grab the encoded contents back out.  The div never exists on the page.
-            return $('<div/>').text(value).html();
-            }
             $(function () {
                 var socket = io();
-                $('form').submit(function(){
-                    var userInput = $('<div/>').text($('#m').val()).html(); // encode user input
-                    var message = "<b>" + indexSite.sessionUser + "</b>: " + userInput;
-                    socket.emit('chat message', message);
-                    $('#m').val('');
-                    return false;
-                });
                 socket.on('chat message', function(msg){
                     $('#messages').append("<div>"+msg+"</div>");
                 });
