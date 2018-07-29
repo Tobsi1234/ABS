@@ -169,6 +169,7 @@
                     eventsView.selectedEvent = '';
                 });
                 navbar.selectedGroup = eventsView.selectedGroup;
+                indexSite.loadMessages();
             },
             addEvent: function() {
                 if(eventsView.newEventName.trim() != "") {

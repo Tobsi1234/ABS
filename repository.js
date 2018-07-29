@@ -51,8 +51,16 @@ var votingSchema = mongoose.Schema({
 
 var GroupVotings = mongoose.model('GroupVotings', votingSchema);
 
+var chatSchema = mongoose.Schema({
+    groupName: String,
+    messages: [String]
+});
+
+var Chat = mongoose.model('Chat', chatSchema);
+
 module.exports = { 
     User: User,
     GroupEvents: GroupEvents,
-    GroupVotings: GroupVotings
+    GroupVotings: GroupVotings,
+    Chat: Chat
 };

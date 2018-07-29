@@ -1,13 +1,17 @@
 <div id="user">
     <br>
     <div v-if="!sessionUser">
-        <input id="username" type="text" v-model="loginUser" placeholder="Enter your username">
-        <input id="password" type="password" name="password" v-model="password" placeholder="Enter your password">
-        <button v-on:click="login" class="btn btn-primary btn-sm custom-buttons">Login</button>
+        <form>
+            <input id="username" type="text" v-model="loginUser" autocomplete="username" placeholder="Enter your username">
+            <input id="password" type="password" v-model="password" autocomplete="current-password" placeholder="Enter your password">
+            <button v-on:click="login" class="btn btn-primary btn-sm custom-buttons">Login</button>
+        </form>
         <br><br>
-        <input v-model="newUser" placeholder="Enter new username">
-        <input v-model="newPassword" placeholder="Enter new password">
-        <button v-on:click="registerUser" class="btn btn-primary btn-sm custom-buttons">Registrieren</button>
+        <form>
+            <input v-model="newUser" placeholder="Enter new username">
+            <input v-model="newPassword" placeholder="Enter new password">
+            <button v-on:click="registerUser" class="btn btn-primary btn-sm custom-buttons">Registrieren</button>
+        </form>
     </div>
     <div v-if="sessionUser">
         <h2>Eingeloggt als {{ sessionUser }}</h2>        
@@ -61,7 +65,6 @@
                     $.post("/api/user", {username: newUser, password: newPassword}, function(result){
                         notify("saved: " + result);
                     });
-                    
                 }
             },
             login: function () {
@@ -81,7 +84,6 @@
                         }
                     });
                 }
-                
             },
             logout: function() {
                 userView.sessionUser = '';
@@ -128,6 +130,7 @@
                 $.post("/api/selectGroup", {selectedGroup: userView.selectedGroup}, function(result){
                 });
                 navbar.selectedGroup = userView.selectedGroup;
+                indexSite.loadMessages();
             }
 
         }

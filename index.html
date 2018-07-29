@@ -46,14 +46,16 @@
         <div id="indexSite" class="container">
             <div class="row" style="padding-top: 20px;">
                 <div id="includePage" class="col-12 col-md-6"></div>
-                <div id="chat" v-if="sessionUser" class="col-12 col-md-6">
+                <div id="chat" v-if="sessionUser" v-cloak class="col-12 col-md-6">
                     <div id="messagesDiv">
                         <ul id="messages"></ul>
                     </div>
                     <hr>
                     <div id="inputDiv">
-                        <input id="m" autocomplete="off" style="width: calc(100% - 75px)"/>
-                        <button v-on:click="sendMessage()" class="btn btn-outline-primary btn-sm" style="float:right;">Senden</button>
+                        <form>
+                            <input id="m" autocomplete="off" style="width: calc(100% - 75px)"/>
+                            <button type="submit" v-on:click="sendMessage()" class="btn btn-outline-primary btn-sm" style="float:right;">Senden</button>
+                        </form>
                     </div>
                 </div>
             </div>      
@@ -78,10 +80,36 @@
                 },
                 methods: {
                     sendMessage: function() {
-                        var userInput = $('<div/>').text($('#m').val()).html(); // encode user input
-                        var message = "<b>" + indexSite.sessionUser + "</b>: " + userInput;
-                        socket.emit('chat message', message);
-                        $('#m').val('');
+                        if(navbar.selectedGroup != null && navbar.selectedGroup != '') {
+                            var userInput = $('<div/>').text($('#m').val()).html(); // encode user input
+                            var message = "<b>" + indexSite.sessionUser + "</b>: " + userInput;
+                            socket.emit('chat message', message);
+                            $('#m').val('');
+                            $.post("/api/saveMessage", {newMessage: message}, function(result){
+                                if(result != '') {
+                                    notify(result);
+                                }
+                            });
+                        } else {
+                            notify("Keine Gruppe ausgewählt.");
+                        }
+                    },
+                    loadMessages: function() {
+                        $('#messages').text("");
+                        if(navbar.selectedGroup != null && navbar.selectedGroup != '') {
+                            $.post("/api/loadMessages", {}, function(result){
+                                if(result != null) {
+                                    if(result.doc != "") {
+                                        result.doc.messages.forEach(msg => {
+                                            $('#messages').append("<div>"+msg+"</div>");
+                                        });
+                                    } else if(result.message != ""){
+                                        notify(result.message);
+                                    }
+                                }
+                            });
+
+                        }
                     }
                 }
             });
@@ -104,6 +132,7 @@
                         navbar.sessionUser = result[0];
                         navbar.selectedGroup = result[1];
                         indexSite.sessionUser = navbar.sessionUser;
+                        indexSite.loadMessages();
                     }
                 });
                 includePage(href);

@@ -5,6 +5,7 @@ var db = require('./repository.js');
 var User = db.User;
 var GroupEvents = db.GroupEvents;
 var GroupVotings = db.GroupVotings;
+var Chat = db.Chat;
     
 // middleware specific to this router
 // authentication, logging, etc.
@@ -32,6 +33,11 @@ router.get('/groupEvents', function(req, res) {
 // Get all groupVotings
 router.get('/groupVotings', function(req, res) {
     GroupVotings.find({}, function(err, docs) { res.send(docs);});
+});
+
+// Get all chats
+router.get('/chat', function(req, res) {
+    Chat.find({}, function(err, docs) { res.send(docs);});
 });
 
 router.post('/session', function(req, res) {
@@ -375,6 +381,50 @@ router.post('/saveCheckedChoice', function(req, res) {
     } else {
         res.send("saveCheckedChoice(): Username null oder keine Gruppe ausgewählt.");
     }
+});
+
+
+// chat:
+
+router.post('/saveMessage', function(req, res) {
+    if(req.session.username != null && req.session.selectedGroup != null) {
+        Chat.findOne({groupName: req.session.selectedGroup}, function(err, doc) {
+            if(err) res.send("saveMessage(): Unknown error.");
+            if(doc != null && doc != "") {
+                Chat.findOneAndUpdate({'groupName': req.session.selectedGroup}, {$push: {messages: req.body.newMessage}}, function(err, doc) {
+                    if(err) return res.send("saveMessage()2: Unknown error.")
+                    return res.send("");
+                });
+            } else {
+                var chat = new Chat({
+                    groupName: req.session.selectedGroup,
+                    messages: req.body.newMessage
+                });
+                chat.save(function (err) {
+                    if (err) return res.send("saveMessage()3: Unknown error.");
+                    return res.send("");
+                });
+            }
+        });
+    } else {
+        res.send("saveMessage(): Username null oder keine Gruppe ausgewählt.");
+    }
+});
+
+router.post('/loadMessages', function(req, res) {
+    if(req.session.username != null && req.session.selectedGroup != null) {
+        Chat.findOne({groupName: req.session.selectedGroup}, function(err, doc) {
+            if(err) res.send({"doc": "", "message":"loadMessages(): Unknown error."});
+            if(doc != null && doc != "") {
+                res.send({"doc": doc, "message": ""});
+            } else {
+                res.send({"doc": "", "message":""});
+            }
+        });
+    } else {
+        res.send({"doc": "", "message":"loadMessages(): Username null oder keine Gruppe ausgewählt."});
+    }
+
 });
 
 module.exports = router;
