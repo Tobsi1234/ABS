@@ -83,7 +83,7 @@
                         if(navbar.selectedGroup != null && navbar.selectedGroup != '') {
                             var userInput = $('<div/>').text($('#m').val()).html(); // encode user input
                             var message = "<b>" + indexSite.sessionUser + "</b>: " + userInput;
-                            socket.emit('chat message', message);
+                            socket.emit('chat message', {groupName:navbar.selectedGroup, message: message});
                             $('#m').val('');
                             $.post("/api/saveMessage", {newMessage: message}, function(result){
                                 if(result != '') {
@@ -175,7 +175,9 @@
             $(function () {
                 var socket = io();
                 socket.on('chat message', function(msg){
-                    $('#messages').append("<div>"+msg+"</div>");
+                    if(msg.groupName == navbar.selectedGroup) {
+                        $('#messages').append("<div>"+msg.message+"</div>");
+                    }
                 });
             });
             
