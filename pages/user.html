@@ -14,8 +14,8 @@
         </form>
     </div>
     <div v-if="sessionUser">
-        <h2>Eingeloggt als {{ sessionUser }}</h2>        
-        <button v-on:click="logout" class="btn btn-primary btn-sm">Logout</button>
+        <h2>Eingeloggt als <i> {{ sessionUser }} </i>      
+        <button v-on:click="logout" class="btn btn-primary btn-sm">Logout</button> </h2> 
         <br><br>
         <input v-model="newGroupName" placeholder="Gruppennamen eingeben">
         <button v-on:click="createGroup" class="btn btn-outline-primary btn-sm custom-buttons">Neue Gruppe erstellen</button>
