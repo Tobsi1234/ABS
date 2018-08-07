@@ -167,9 +167,12 @@
                 $.post("/api/selectGroup", {selectedGroup: eventsView.selectedGroup}, function(result){
                     eventsView.getEventsOfSelectedGroup();
                     eventsView.selectedEvent = '';
+                    navbar.selectedGroup = eventsView.selectedGroup;
+                    indexSite.loadMessages();
+                    // if successful:
+                    leaveSocket();
+                    joinSocket(eventsView.selectedGroup);
                 });
-                navbar.selectedGroup = eventsView.selectedGroup;
-                indexSite.loadMessages();
             },
             addEvent: function() {
                 if(eventsView.newEventName.trim() != "") {
@@ -334,7 +337,7 @@
         }
     });
 
-    if(navbar.sessionUser != '') {
+    if(navbar.sessionUser != null && navbar.sessionUser != '') {
         eventsView.getGroupsOfSessionUser();
         if(navbar.selectedGroup != null && navbar.selectedGroup != "") {
             eventsView.getEventsOfSelectedGroup();

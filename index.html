@@ -5,6 +5,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         
+        <link rel="shortcut icon" href="#">
         <link rel="stylesheet" type="text/css" href="css/my.css" />
         <!-- Bootstrap CSS -->
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" />
@@ -103,6 +104,7 @@
                                         result.doc.messages.forEach(msg => {
                                             $('#messages').append("<div>"+msg+"</div>");
                                         });
+                                        updateScroll();
                                     } else if(result.message != ""){
                                         notify(result.message);
                                     }
@@ -133,6 +135,10 @@
                         navbar.selectedGroup = result[1];
                         indexSite.sessionUser = navbar.sessionUser;
                         indexSite.loadMessages();
+                        if(navbar.selectedGroup != null && navbar.selectedGroup != "") {
+                            leaveSocket();
+                            joinSocket(navbar.selectedGroup)
+                        } 
                     }
                 });
                 includePage(href);
@@ -168,18 +174,45 @@
                     delay: 1000
                 });
             }
+
+            var scrolled = false;
+            function updateScroll(){
+                if(!scrolled){
+                    var element = document.getElementById("messagesDiv");
+                    element.scrollTop = element.scrollHeight;
+                }
+            }
+
+            $('#messagesDiv').scroll(function(){
+                scrolled=true;
+                console.log(scrolled);
+            });
             
         </script>
 
         <script>
             $(function () {
-                var socket = io();
                 socket.on('chat message', function(msg){
-                    if(msg.groupName == navbar.selectedGroup) {
+                    //if(msg.groupName == navbar.selectedGroup) {
                         $('#messages').append("<div>"+msg.message+"</div>");
-                    }
+                        updateScroll();
+                    //}
                 });
             });
+
+            function joinSocket(group) {
+                $.post("/api/getUserId", {}, function(result){
+                    if(result != 0) {
+                        socket.emit("subscribe", { room: group, userId: result});
+                    } else {
+                        notify("Es ist ein Problem beim Beitreten des Chats aufgetreten.");
+                    }
+                });
+            }
+
+            function leaveSocket() {
+                socket.emit("unsubscribe", {});
+            }
             
         </script>
         <!-- Optional JavaScript -->

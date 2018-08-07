@@ -92,7 +92,6 @@ router.post('/createGroup', function(req, res) {
     User.findOne({groups: req.body.groupName}, function(err, doc) {
         if(err) res.send("Unknown error.");
         if(doc != null) {
-            console.log(doc);
             res.send("Gruppenname bereits vorhanden.");
         } else {
             User.update({username: req.session.username}, {$push: {'groups': req.body.groupName} }, function(err, count) {
@@ -130,7 +129,7 @@ router.post('/enterGroup', function(req, res) {
                 }
             });
         } else {
-            console.log("User is null");
+            console.log("EnterGroup(): User is null");
             res.send("");
         }
     });
@@ -144,7 +143,7 @@ router.post('/exitGroup', function(req, res) {
             res.send("Gruppe erfolgreich ausgetreten.");
         });
     } else {
-        res.send("Username null oder keine Gruppe ausgewählt.");
+        res.send("ExitGroup(): Username null oder keine Gruppe ausgewählt.");
     }
 });
 
@@ -154,16 +153,24 @@ router.post('/getGroupsOfUser', function(req, res) {
         if(doc != null) {
             res.send(doc.groups);
         } else {
-            console.log("User is null");
+            console.log("GetGroupsOfUser(): User is null");
             res.send("");
         }
     });
 });
 
 router.post('/selectGroup', function(req, res) {
-    req.session.selectedGroup = req.body.selectedGroup;
-    console.log("selectGroup: " + req.body.selectedGroup);
-    res.end();
+    User.findOne({username: req.session.username, groups: req.body.selectedGroup}, function(err, doc) {
+        if(err) res.send("SelectGroup(): Unknown error.");
+        if(doc != null) {
+            req.session.selectedGroup = req.body.selectedGroup;
+            console.log("selectGroup: " + req.body.selectedGroup);
+        } else {
+            console.log("Select Group: The user " + req.session.username + " is not in group " + req.body.selectedGroup);
+        }
+        console.log(req.session.selectedGroup);
+        res.send("");
+    });
 });
 
 router.post('/addEvent', function(req, res) {
@@ -426,5 +433,24 @@ router.post('/loadMessages', function(req, res) {
     }
 
 });
+
+
+//socket:
+
+router.post('/getUserId', function(req, res) {
+    if(req.session.username != null && req.session.selectedGroup != null) {
+        User.findOne({username: req.session.username}, function(err, doc) {
+            if(err) return res.send("0");
+            if(doc != null && doc != "") {
+                res.send(doc._id);
+            } else {
+                res.send("0");
+            }
+        });
+    } else {
+        res.send("0");
+    }
+});
+
 
 module.exports = router;

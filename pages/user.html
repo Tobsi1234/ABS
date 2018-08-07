@@ -128,15 +128,18 @@
             },
             selectGroup: function() {
                 $.post("/api/selectGroup", {selectedGroup: userView.selectedGroup}, function(result){
+                    navbar.selectedGroup = userView.selectedGroup;
+                    indexSite.loadMessages();
+                    // if successful:
+                    leaveSocket();
+                    joinSocket(userView.selectedGroup);
                 });
-                navbar.selectedGroup = userView.selectedGroup;
-                indexSite.loadMessages();
             }
 
         }
     })
 
-    if(navbar.sessionUser != '') {
+    if(navbar.sessionUser != null && navbar.sessionUser != '') {
         userView.getGroupsOfSessionUser();
     }
 

@@ -6,17 +6,8 @@ var bodyParser = require('body-parser');
 var MemoryStore = require('session-memory-store')(session);
 var io = require('socket.io')(http);
 
-io.on('connection', function(socket){
-    console.log('a user connected');
-    socket.on('disconnect', function(){
-        console.log('user disconnected');
-    });
-    socket.on('chat message', function(msg){
-        console.log('groupName: ' + msg.groupName + ', message: ' + msg.message);
-        io.emit('chat message', msg);
-    });
-});
-
+var db = require('./repository.js');
+var User = db.User;
 var router = require('./backendAPI');
 
 //config express to use body parser with JSON
@@ -29,6 +20,33 @@ app.use(express.static('public'));
 
 //for /api use backendAPI router
 app.use('/api', router);
+
+
+io.on('connection', function(socket){
+    console.log('a user connected');
+    socket.on('disconnect', function(){
+        console.log('user disconnected');
+    });
+    socket.on('chat message', function(msg){
+        console.log('groupName: ' + msg.groupName + ', message: ' + msg.message);
+        io.to(msg.groupName).emit('chat message', msg);
+    });
+
+    socket.on('subscribe', function(data) {
+        User.findOne({_id: data.userId, groups: data.room}, function(err, doc) {
+            if(doc != null) {
+                socket.join(data.room);
+            }
+        });
+    });
+
+    socket.on('unsubscribe', function(data) {
+        var rooms = io.sockets.adapter.sids[socket.id];
+        for(var room in rooms) {
+            socket.leave(room);
+        }
+    });
+});
 
 
 //define route "/" (root) with response 
