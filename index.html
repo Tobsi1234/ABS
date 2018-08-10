@@ -28,20 +28,31 @@
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="collapse navbar-collapse" id="navbarNav" v-if="sessionUser" v-cloak>
                     <ul class="navbar-nav">
                         <li class="nav-item" v-bind:class="{active: currentSite === 'events'}">
                             <a class="nav-link" href="#events" onclick="return follow(this);">Veranstaltungen</a>
                         </li>
-                        <li class="nav-item" v-bind:class="{active: currentSite === 'settings'}">
+                        <!--<li class="nav-item" v-bind:class="{active: currentSite === 'settings'}">
                             <a class="nav-link" href="#settings" onclick="return follow(this);">Einstellungen</a>
-                        </li>
+                        </li>-->
                         <li class="nav-item" v-bind:class="{active: currentSite === 'user'}">
                             <a class="nav-link" href="#user" onclick="return follow(this);">User</a>
                         </li>
                     </ul>
                 </div>
-                <p v-if="sessionUser" class="navbar-link active my-2 my-lg-0"> {{ sessionUser }} ({{ selectedGroup }})</p>
+                <div v-cloak>
+                    <p v-if="sessionUser" class="navbar-link active my-2 my-lg-0"> {{ sessionUser }} ({{ selectedGroup }}) 
+                        <button v-on:click="logout" class="btn btn-primary btn-sm">Logout</button></p>
+                    <div v-if="!sessionUser">
+                        <form style="display: inline;">
+                            <input id="username" type="text" v-model="loginUser" autocomplete="username" placeholder="Enter your username">
+                            <input id="password" type="password" v-model="password" autocomplete="current-password" placeholder="Enter your password">
+                            <button v-on:click="login" class="btn btn-primary btn-sm custom-buttons">Login</button>
+                        </form>
+                        <a href="#user" onclick="return follow(this);">Registrieren</a>
+                    </div>
+                </div>
             </div>
         </nav>
         <div id="indexSite" class="container">
@@ -70,7 +81,39 @@
                 data: {
                     currentSite: 'home',
                     sessionUser: '',
-                    selectedGroup: ''
+                    selectedGroup: '',
+                    loginUser: '',
+                    password: ''
+                },
+                methods: {
+                    login: function () {
+                        var loginUser = navbar.loginUser;
+                        var password = navbar.password;
+
+                        if(loginUser != '' && password != '') {
+                            $.post("/api/login", {username: loginUser, password: password}, function(result){
+                                if(result == "OK") {
+                                    navbar.sessionUser = loginUser;
+                                    indexSite.sessionUser = loginUser;
+                                    // set /home specific data
+                                    //...
+                                    window.location = "#"; // redirects user to "home", so we only have to load the /home data
+                                } else {
+                                    notify("Login fehlgeschlagen: " + result);
+                                }
+                            });
+                        }
+                    },
+                    logout: function() {
+                        navbar.sessionUser = '';
+                        indexSite.sessionUser = '';
+                        navbar.selectedGroup = '';
+                        // reset /home specific data
+                        //...
+                        $.post("/api/logout", {}, function(result){
+                            window.location = "#"; // redirects user to "home", so we only have to reset the /home data
+                        });
+                    }
                 }
             });
 

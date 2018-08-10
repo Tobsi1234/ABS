@@ -2,20 +2,13 @@
     <br>
     <div v-if="!sessionUser">
         <form>
-            <input id="username" type="text" v-model="loginUser" autocomplete="username" placeholder="Enter your username">
-            <input id="password" type="password" v-model="password" autocomplete="current-password" placeholder="Enter your password">
-            <button v-on:click="login" class="btn btn-primary btn-sm custom-buttons">Login</button>
-        </form>
-        <br><br>
-        <form>
             <input v-model="newUser" placeholder="Enter new username">
             <input v-model="newPassword" placeholder="Enter new password">
             <button v-on:click="registerUser" class="btn btn-primary btn-sm custom-buttons">Registrieren</button>
         </form>
     </div>
     <div v-if="sessionUser">
-        <h2>Eingeloggt als <i> {{ sessionUser }} </i>      
-        <button v-on:click="logout" class="btn btn-primary btn-sm">Logout</button> </h2> 
+        <h2>Eingeloggt als <i> {{ sessionUser }} </i> </h2> 
         <br><br>
         <input v-model="newGroupName" placeholder="Gruppennamen eingeben">
         <button v-on:click="createGroup" class="btn btn-outline-primary btn-sm custom-buttons">Neue Gruppe erstellen</button>
@@ -31,7 +24,7 @@
         </select>
         <div>
         <br>
-        <button v-if="selectedGroup" v-on:click="exitGroup">Aus aktueller Gruppe austreten</button>
+        <button v-if="selectedGroup" v-on:click="exitGroup" class="btn btn-primary btn-sm custom-buttons">Aus aktueller Gruppe austreten</button>
         </div>
 
     </div>
@@ -47,8 +40,6 @@
             sessionUser: navbar.sessionUser,
             newUser: '',
             newPassword: '',
-            loginUser: '',
-            password: '',
             newGroup: '',
             groupName: '',
             newGroupName: '',
@@ -67,49 +58,21 @@
                     });
                 }
             },
-            login: function () {
-                var loginUser = userView.loginUser;
-                var password = userView.password;
-
-                if(loginUser != '' && password != '') {
-                    console.log(loginUser);
-                    $.post("/api/login", {username: loginUser, password: password}, function(result){
-                        if(result == "OK") {
-                            userView.sessionUser = loginUser;
-                            navbar.sessionUser = loginUser;
-                            indexSite.sessionUser = loginUser;
-                            userView.getGroupsOfSessionUser();
-                        } else {
-                            notify("Login fehlgeschlagen: " + result);
-                        }
-                    });
-                }
-            },
-            logout: function() {
-                userView.sessionUser = '';
-                navbar.sessionUser = '';
-                indexSite.sessionUser = '';
-                userView.selectedGroup = '';
-                navbar.selectedGroup = '';
-                $.post("/api/logout", {}, function(result){
-                });
-            },
             createGroup: function() {
-                var newGroup = userView.newGroupName;
-
+                var newGroup = userView.newGroupName.trim();
                 if(newGroup != '') {
-                    console.log(newGroup);
                     $.post("/api/createGroup", {groupName: newGroup}, function(result){
+                        userView.getGroupsOfSessionUser();
                         notify("CreateGroup: " + result);
                     });
                 }
             },
             enterGroup: function() {
-                var existingGroup = userView.groupName;
+                var existingGroup = userView.groupName.trim();
 
                 if(existingGroup != '') {
-                    console.log(existingGroup);
                     $.post("/api/enterGroup", {groupName: existingGroup}, function(result){
+                        userView.getGroupsOfSessionUser();
                         notify("EnterGroup: " + result);
                     });
                 }
