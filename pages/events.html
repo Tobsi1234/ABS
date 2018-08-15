@@ -322,6 +322,7 @@
             saveCheckedChoice: function(selectedVoting) {
                 $.post("/api/saveCheckedChoice", {selectedEvent: eventsView.selectedEvent, selectedVoting: selectedVoting, votingItem: eventsView.checkedChoice}, function(result){
                     notify("SaveCheckedChoice: " + result.message);
+                    notifyGroupAboutNewVoting(eventsView.selectedEvent.title, selectedVoting.title);
                     // update voting result:
                     if(result.object != null && result.object != "") { 
                         result.object.events.forEach(event => {

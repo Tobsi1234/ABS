@@ -31,6 +31,10 @@ io.on('connection', function(socket){
         console.log('groupName: ' + msg.groupName + ', message: ' + msg.message);
         io.to(msg.groupName).emit('chat message', msg);
     });
+    socket.on('voting', function(msg) {
+        console.log('groupName: ' + msg.groupName + ', voting: ' + msg.username);
+        socket.broadcast.to(msg.groupName).emit('voting', msg);
+    });
 
     socket.on('subscribe', function(data) {
         User.findOne({_id: data.userId, groups: data.room}, function(err, doc) {
