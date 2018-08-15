@@ -1,4 +1,6 @@
 var express = require('express');
+var passwordHash = require('password-hash');
+
 var router = express.Router();
 
 var db = require('./repository.js');
@@ -48,7 +50,7 @@ router.post('/session', function(req, res) {
 router.post('/user', function(req, res) {
     var newUser = new User({
         username: req.body.username,
-        password: req.body.password
+        password: passwordHash.generate(req.body.password)
     });
 
     User.find({username: newUser.username}, function(err, docs) {
@@ -71,11 +73,11 @@ router.post('/login', function(req, res) {
         if(docs == "") {
             res.send("Username nicht vorhanden.");
         } else {
-            if(docs[0].password != null && req.body.password == docs[0].password) {
+            if(docs[0].password != null && passwordHash.verify(req.body.password, docs[0].password)) {
                 req.session.username = docs[0].username;
                 res.sendStatus(200);
             } else {
-                res.send("Passowrt falsch, richtiges: " + docs[0].password);
+                res.send("Passwort falsch.");
             }
         }
     });
