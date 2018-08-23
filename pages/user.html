@@ -19,16 +19,23 @@
 
         <select v-model="selectedGroup" @change="selectGroup">
             <option v-for="group in groups" v-bind:value="group">
-                {{ group }}
+                {{ group.title }}
             </option>
         </select>
         <div>
         <br>
         <button v-if="selectedGroup" v-on:click="exitGroup" class="btn btn-primary btn-sm custom-buttons">Aus aktueller Gruppe austreten</button>
+        </div><br><br>
+        <div v-if="messages" id="userMessages">
+            <div v-for="message in messages" v-bind:value="message">
+                <div v-if="message.messageType === 'MEMBER_NEW'">
+                    {{ message.content }} möchte der Gruppe {{ message.groupName}} beitreten. 
+                    <button v-on:click="acceptUser(message)" class="btn btn-outline-primary btn-sm custom-buttons"><span class="glyphicon">&#x2713;</span></button>
+                    <button v-on:click="refuseUser(message)" class="btn btn-outline-primary btn-sm custom-buttons"><span class="glyphicon">&#x2613;</span></button>
+                </div>   
+            </div>
         </div>
-
     </div>
-
 </div>
 
 
@@ -44,7 +51,8 @@
             groupName: '',
             newGroupName: '',
             selectedGroup: navbar.selectedGroup,
-            groups: []
+            groups: [],
+            messages: ''
         },
         methods: {
             registerUser: function () {
@@ -67,13 +75,18 @@
                     });
                 }
             },
-            enterGroup: function() {
+            enterGroup: function() { // actually just send a message to admin of group
                 var existingGroup = userView.groupName.trim();
 
                 if(existingGroup != '') {
                     $.post("/api/enterGroup", {groupName: existingGroup}, function(result){
-                        userView.getGroupsOfSessionUser();
-                        notify("EnterGroup: " + result);
+                        if(result.userId != null) {
+                            notify("EnterGroup: " + result.resultMessage);
+                            notifyUserAboutUserMessage(result.userId);
+                        } else {
+                            notify("EnterGroup: " + result);
+                        } 
+                        
                     });
                 }
             },
@@ -95,15 +108,41 @@
                     indexSite.loadMessages();
                     // if successful:
                     leaveSocket();
-                    joinSocket(userView.selectedGroup);
+                    joinSocket(userView.selectedGroup.title);
+                });
+            },
+            getUserMessages: function() {
+                $.post("/api/getUserMessages", {}, function(result){
+                    if(result[0] != null) {
+                        userView.messages = result;
+                    } else {
+                        userView.messages = '';
+                    }
+                });
+            },
+            acceptUser: function(message) {
+                // accept user and update group status of accepted user
+                // delete user message of sessionUser
+                $.post("/api/acceptUser", {user: message.content, groupName: message.groupName, messageId: message._id}, function(result){
+                    userView.getUserMessages();
+                    notify(result);
+                });
+                
+            },
+            refuseUser: function(message) {
+                // refuse user and delete group in declined user
+                // delete user message of sessionUser
+                $.post("/api/refuseUser", {user: message.content, groupName: message.groupName, messageId: message._id}, function(result){
+                    userView.getUserMessages();
+                    notify(result);
                 });
             }
-
         }
     })
 
     if(navbar.sessionUser != null && navbar.sessionUser != '') {
         userView.getGroupsOfSessionUser();
+        userView.getUserMessages();
     }
 
 </script>

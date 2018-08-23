@@ -4,17 +4,17 @@
             <label>Wähle eine Gruppe: </label>
             <select v-model="selectedGroup" @change="selectGroup">
                 <option v-for="group in groups" v-bind:value="group">
-                    {{ group }}
+                    {{ group.title }}
                 </option>
             </select>
         </div>
         <div v-if="selectedGroup">
             <div v-if="!selectedEvent">
-                <h3>Veranstaltungen in <i>{{ selectedGroup }}</i></h3><br>
+                <h3>Veranstaltungen in <i>{{ selectedGroup.title }}</i></h3><br>
                 <label>Wähle eine andere Gruppe: </label>
                 <select v-model="selectedGroup" @change="selectGroup">
-                    <option v-for="group in groups" :key="group" v-bind:value="group">
-                        {{ group }}
+                    <option v-for="group in groups" :key="group.title" v-bind:value="group">
+                        {{ group.title }}
                     </option>
                 </select>
                 <br><br>
@@ -171,7 +171,7 @@
                     indexSite.loadMessages();
                     // if successful:
                     leaveSocket();
-                    joinSocket(eventsView.selectedGroup);
+                    joinSocket(eventsView.selectedGroup.title);
                 });
             },
             addEvent: function() {

@@ -9,10 +9,22 @@ db.once('open', function() {
     console.log("we're connected!");
 });
 
+var MessageType = {"MEMBER_NEW": "MEMBER_NEW"};
+Object.freeze(MessageType);
+
 var userSchema = mongoose.Schema({
     username: String,
     password: String,
-    groups: [String]
+    groups: [{
+        title: String, 
+        status: Number // 0: Admin, 1: Normal member of group, 2: Requested to be member of group
+    }],
+    messages: [{
+        messageType: String, // e.g. "MEMBER_NEW"
+        groupName: String,
+        content: String, // e.g. Username
+        created: Date
+    }]
 });
 
 var User = mongoose.model('User', userSchema);
@@ -62,5 +74,6 @@ module.exports = {
     User: User,
     GroupEvents: GroupEvents,
     GroupVotings: GroupVotings,
-    Chat: Chat
+    Chat: Chat,
+    MessageType: MessageType
 };

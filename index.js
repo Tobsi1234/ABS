@@ -21,7 +21,6 @@ app.use(express.static('public'));
 //for /api use backendAPI router
 app.use('/api', router);
 
-
 io.on('connection', function(socket){
     console.log('a user connected');
     socket.on('disconnect', function(){
@@ -32,16 +31,22 @@ io.on('connection', function(socket){
         io.to(msg.groupName).emit('chat message', msg);
     });
     socket.on('voting', function(msg) {
-        console.log('groupName: ' + msg.groupName + ', voting: ' + msg.username);
         socket.broadcast.to(msg.groupName).emit('voting', msg);
     });
 
+    socket.on('userMessage', function(msg) {
+        socket.broadcast.to(msg.userId).emit('userMessage', 'Du hast eine neue Nachricht.');
+    });
+
     socket.on('subscribe', function(data) {
-        User.findOne({_id: data.userId, groups: data.room}, function(err, doc) {
-            if(doc != null) {
-                socket.join(data.room);
-            }
-        });
+        if(data.room != null) {
+            User.findOne({_id: data.userId, 'groups.title': data.room}, function(err, doc) {
+                if(doc != null) {
+                    socket.join(data.room);
+                }
+            });
+        }
+        socket.join(data.userId);   
     });
 
     socket.on('unsubscribe', function(data) {

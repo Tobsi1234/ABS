@@ -8,17 +8,19 @@ var User = db.User;
 var GroupEvents = db.GroupEvents;
 var GroupVotings = db.GroupVotings;
 var Chat = db.Chat;
+
+function checkIfSessionNotNull(req) {
+    if(req.session.username != null && req.session.selectedGroup != null && req.session.selectedGroup.title != null) {
+        return true;
+    } else {
+        return false;
+    }
+}
     
 // middleware specific to this router
 // authentication, logging, etc.
 router.use(function(req, res, next) {
   console.log('API access: ', new Date() );
-  next();
-});
-
-// logging middleware for /student
-router.use('/user', function(req, res, next) {
-  console.log( req.method + ' /user');
   next();
 });
 
@@ -91,12 +93,12 @@ router.post('/logout', function(req, res) {
 });
 
 router.post('/createGroup', function(req, res) {
-    User.findOne({groups: req.body.groupName}, function(err, doc) {
+    User.findOne({'groups.title': req.body.groupName}, function(err, doc) {
         if(err) res.send("Unknown error.");
         if(doc != null) {
             res.send("Gruppenname bereits vorhanden.");
         } else {
-            User.update({username: req.session.username}, {$push: {'groups': req.body.groupName} }, function(err, count) {
+            User.update({username: req.session.username}, {$push: {'groups': {'title': req.body.groupName, 'status': 0}} }, function(err, count) {
                 if (err) res.send("Unknown error.");
                 res.send("Gruppe erfolgreich erstellt.");
             });
@@ -110,21 +112,28 @@ router.post('/enterGroup', function(req, res) {
         if(doc != null) {
             var alreadyInGroup = false;
             doc.groups.forEach(element => {
-                if(element == req.body.groupName) {
+                if(element.title == req.body.groupName) {
                     alreadyInGroup = true;
                 }
             });
             if(alreadyInGroup) {
-                return res.send("Bereits in der Gruppe");
+                return res.send("Du bist bereits in dieser Gruppe oder hast eine Beitrittsanfrage versendet.");
             }
             console.log(alreadyInGroup);
             // If user not already in group, check if group exists:
-            User.findOne({groups: req.body.groupName}, function(err, doc) {
-                if(err) res.send("Unknown error.");
+            User.findOne({'groups.title': req.body.groupName, 'groups.status': 0}, function(err, doc) {
+                if(err) return res.send(err.message);
                 if(doc != null) {
-                    User.update({username: req.session.username}, {$push: {'groups': req.body.groupName} }, function(err, count) {
-                        if (err) res.send("Unknown error.");
+                    /*User.update({username: req.session.username}, {$push: {'groups': {'title': req.body.groupName, 'status': 1}} }, function(err, count) {
+                        if (err) return res.send(err.message);
                         res.send("Gruppe erfolgreich beigetreten.");
+                    });*/
+                    User.update({'username': doc.username}, {$push: {'messages': {'messageType': db.MessageType.MEMBER_NEW, 'groupName': req.body.groupName, 'content': req.session.username, 'created': new Date()}} }, function(err, count) {
+                        if (err) return res.send(err.message);
+                        User.update({username: req.session.username}, {$push: {'groups': {'title': req.body.groupName, 'status': 2}} }, function(err, count) {
+                            if (err) return res.send(err.message);
+                            res.send({'userId': doc._id, 'resultMessage': "Beitrittsanfrage gestellt."});
+                        });
                     });
                 } else {
                     res.send("Gruppe existiert nicht.");
@@ -138,10 +147,11 @@ router.post('/enterGroup', function(req, res) {
 });
 
 router.post('/exitGroup', function(req, res) {
-    if(req.session.username != null && req.session.selectedGroup != null) {
-        User.update({username: req.session.username}, {$pull: {'groups': req.session.selectedGroup} }, function(err, doc) {
+    if(checkIfSessionNotNull(req)) {
+        User.update({username: req.session.username}, {$pull: {'groups': {'title': req.session.selectedGroup.title}} }, function(err, doc) {
             if(err) res.send("Unknown error.");
             req.session.selectedGroup = "";
+            // TODO: Delete Events, Votings etc. if user is admin
             res.send("Gruppe erfolgreich ausgetreten.");
         });
     } else {
@@ -153,7 +163,15 @@ router.post('/getGroupsOfUser', function(req, res) {
     User.findOne({username: req.session.username}, function(err, doc) {
         if(err) res.send("Unknown error.");
         if(doc != null) {
-            res.send(doc.groups);
+            var groups = [];
+            if(doc.groups != null) {
+                doc.groups.forEach(group => {
+                    if(group.status <= 1) {
+                        groups.push(group);
+                    }
+                });
+            }
+            res.send(groups);
         } else {
             console.log("GetGroupsOfUser(): User is null");
             res.send("");
@@ -162,7 +180,7 @@ router.post('/getGroupsOfUser', function(req, res) {
 });
 
 router.post('/selectGroup', function(req, res) {
-    User.findOne({username: req.session.username, groups: req.body.selectedGroup}, function(err, doc) {
+    User.findOne({username: req.session.username, 'groups.title': req.body.selectedGroup.title}, function(err, doc) {
         if(err) res.send("SelectGroup(): Unknown error.");
         if(doc != null) {
             req.session.selectedGroup = req.body.selectedGroup;
@@ -176,16 +194,16 @@ router.post('/selectGroup', function(req, res) {
 });
 
 router.post('/addEvent', function(req, res) {
-    if(req.session.username != null && req.session.selectedGroup != null) {
-        GroupEvents.findOne({groupName: req.session.selectedGroup}, function(err, doc) {
+    if(checkIfSessionNotNull(req)) {
+        GroupEvents.findOne({groupName: req.session.selectedGroup.title}, function(err, doc) {
             if(err) return res.send("Unknown error.");
             if(doc != null && doc != "") {
-                GroupEvents.update({groupName: req.session.selectedGroup}, {$push: {'details': {'title': req.body.newEventName, 'created': new Date()}} }, function(err, doc) { 
+                GroupEvents.update({groupName: req.session.selectedGroup.title}, {$push: {'details': {'title': req.body.newEventName, 'created': new Date()}} }, function(err, doc) { 
                     res.send("Neues Event wurde zur Gruppe hinzugefügt.");
                 });
             } else {
                 var newGroupEvent = new GroupEvents({
-                    groupName: req.session.selectedGroup,
+                    groupName: req.session.selectedGroup.title,
                     details: {
                         title: req.body.newEventName,
                         created: new Date()
@@ -203,7 +221,7 @@ router.post('/addEvent', function(req, res) {
 });
 
 router.post('/saveEvent', function(req, res) {
-    if(req.session.username != null && req.session.selectedGroup != null) {
+    if(checkIfSessionNotNull(req)) {
         GroupEvents.update({'details._id': req.body.eventId}, {$set:  {'details.$.date': req.body.newDate}}, function(err, doc) {
             if(err) return res.send("SaveEvent(): Unknown error.");
             res.send("Event wurde aktualisiert.");
@@ -213,10 +231,10 @@ router.post('/saveEvent', function(req, res) {
 
 // saves new title of event in GroupEvents and updates GroupVotings accordingly.
 router.post('/saveNewTitle', function(req, res) {
-    if(req.session.username != null && req.session.selectedGroup != null) {
+    if(checkIfSessionNotNull(req)) {
         GroupEvents.update({'details._id': req.body.selectedEvent._id}, {$set:  {'details.$.title': req.body.newTitle}}, function(err, doc) {
             if(err) return res.send("SaveNewTitle(): Unknown error.");
-            GroupVotings.update({groupName: req.session.selectedGroup, 'events.title': req.body.selectedEvent.title, 'events.created': req.body.selectedEvent.created}, {$set: {'events.$.title': req.body.newTitle} }, function(err, doc) {
+            GroupVotings.update({groupName: req.session.selectedGroup.title, 'events.title': req.body.selectedEvent.title, 'events.created': req.body.selectedEvent.created}, {$set: {'events.$.title': req.body.newTitle} }, function(err, doc) {
                 if(err) return res.send("SaveNewTitle()2: Unknown error.");
                 res.send("Event wurde aktualisiert.");
             });
@@ -225,8 +243,8 @@ router.post('/saveNewTitle', function(req, res) {
 });
 
 router.post('/getEventsOfSelectedGroup', function(req, res) {
-    if(req.session.username != null && req.session.selectedGroup != null) {
-        GroupEvents.findOne({groupName: req.session.selectedGroup}, function(err, doc) {
+    if(checkIfSessionNotNull(req)) {
+        GroupEvents.findOne({groupName: req.session.selectedGroup.title}, function(err, doc) {
             if(err) return res.send("Unknown error.");
             if(doc != null && doc != "") {
                 doc.details.sort(function(a,b) {
@@ -248,8 +266,8 @@ router.post('/getEventsOfSelectedGroup', function(req, res) {
 });
 
 router.post('/addVoting', function(req, res) {
-    if(req.session.username != null && req.session.selectedGroup != null) {
-        GroupVotings.findOne({groupName: req.session.selectedGroup}, function(err, doc) {
+    if(checkIfSessionNotNull(req)) {
+        GroupVotings.findOne({groupName: req.session.selectedGroup.title}, function(err, doc) {
             if(err) return res.send("AddVoting(): Unknown error." + err);
             if(doc != null && doc != "") {
                 var eventExists = false;
@@ -273,20 +291,20 @@ router.post('/addVoting', function(req, res) {
                     }
                 }
                 if(eventExists) {
-                    GroupVotings.update({groupName: req.session.selectedGroup, 'events.title': req.body.selectedEvent.title, 'events.created': req.body.selectedEvent.created}, {$push: {'events.$.votings': {'title': req.body.newVotingName, 'created': new Date()}} }, function(err, doc) {
+                    GroupVotings.update({groupName: req.session.selectedGroup.title, 'events.title': req.body.selectedEvent.title, 'events.created': req.body.selectedEvent.created}, {$push: {'events.$.votings': {'title': req.body.newVotingName, 'created': new Date()}} }, function(err, doc) {
                         if(err) return res.send("AddVoting(): " + err);
                         return res.send("Neue Abstimmung wurde zum Event hinzugefügt.");
                     });
                 } else {
                     // Should not happen, but anyway:
-                    GroupVotings.update({groupName: req.session.selectedGroup}, {$push: {'events': {'title': req.body.selectedEvent.title, 'created': req.body.selectedEvent.created, 'votings': {'title': req.body.newVotingName, 'created': new Date()}}} }, function(err, doc) { 
+                    GroupVotings.update({groupName: req.session.selectedGroup.title}, {$push: {'events': {'title': req.body.selectedEvent.title, 'created': req.body.selectedEvent.created, 'votings': {'title': req.body.newVotingName, 'created': new Date()}}} }, function(err, doc) { 
                         if(err) return res.send("AddVoting(): " + err);
                         return res.send("Erste Abstimmung wurde zum bestehenden Event hinzugefügt.");
                     });
                 }
             } else {
                 newGroupVoting = new GroupVotings({
-                    groupName: req.session.selectedGroup,
+                    groupName: req.session.selectedGroup.title,
                     events: {
                         title: req.body.selectedEvent.title,
                         created: req.body.selectedEvent.created,
@@ -308,8 +326,8 @@ router.post('/addVoting', function(req, res) {
 });
 
 router.post('/getVotingsOfSelectedEvent', function(req, res) {
-    if(req.session.username != null && req.session.selectedGroup != null) {
-        GroupVotings.findOne({groupName: req.session.selectedGroup}, function(err, doc) {
+    if(checkIfSessionNotNull(req)) {
+        GroupVotings.findOne({groupName: req.session.selectedGroup.title}, function(err, doc) {
             if(err) return res.send("AddVoting(): Unknown error." + err);
             if(doc != null && doc != "") {
                 if(doc.events != null) {
@@ -330,8 +348,8 @@ router.post('/getVotingsOfSelectedEvent', function(req, res) {
 });
 
 router.post('/saveVotingItem', function(req, res) {
-    if(req.session.username != null && req.session.selectedGroup != null) {
-        GroupVotings.update({'groupName': req.session.selectedGroup}, {$push: {'events.$[i].votings.$[j].choices': {'title': req.body.newVotingItem}} }, {arrayFilters: [{$and: [{'i.title': req.body.selectedEvent.title}, {'i.created': new Date(req.body.selectedEvent.created)}]}, {'j.title': req.body.selectedVoting.title}]}, function(err, doc) {
+    if(checkIfSessionNotNull(req)) {
+        GroupVotings.update({'groupName': req.session.selectedGroup.title}, {$push: {'events.$[i].votings.$[j].choices': {'title': req.body.newVotingItem}} }, {arrayFilters: [{$and: [{'i.title': req.body.selectedEvent.title}, {'i.created': new Date(req.body.selectedEvent.created)}]}, {'j.title': req.body.selectedVoting.title}]}, function(err, doc) {
             if(err) return res.send("SaveVotingItem(): " + err);
             return res.send("Neue Abstimmungsmöglichkeit wurde zur Abstimmung hinzugefügt.");
         });
@@ -341,8 +359,8 @@ router.post('/saveVotingItem', function(req, res) {
 });
 
 router.post('/removeVotingItem', function(req, res) {
-    if(req.session.username != null && req.session.selectedGroup != null) {
-        GroupVotings.update({'groupName': req.session.selectedGroup}, {$pull: {'events.$[i].votings.$[j].choices': {'title': req.body.votingItem}} }, {arrayFilters: [{$and: [{'i.title': req.body.selectedEvent.title}, {'i.created': new Date(req.body.selectedEvent.created)}]}, {'j.title': req.body.selectedVoting.title}]}, function(err, doc) {
+    if(checkIfSessionNotNull(req)) {
+        GroupVotings.update({'groupName': req.session.selectedGroup.title}, {$pull: {'events.$[i].votings.$[j].choices': {'title': req.body.votingItem}} }, {arrayFilters: [{$and: [{'i.title': req.body.selectedEvent.title}, {'i.created': new Date(req.body.selectedEvent.created)}]}, {'j.title': req.body.selectedVoting.title}]}, function(err, doc) {
             if(err) return res.send("RemoveVotingItem(): " + err);
             return res.send("Abstimmungsmöglichkeit wurde von der Abstimmung entfernt.");
         });
@@ -352,12 +370,12 @@ router.post('/removeVotingItem', function(req, res) {
 });
 
 router.post('/saveCheckedChoice', function(req, res) {
-    if(req.session.username != null && req.session.selectedGroup != null) {
+    if(checkIfSessionNotNull(req)) {
         // remove previous choice from all subdocuments (should only be there once actually):
-        GroupVotings.update({'groupName': req.session.selectedGroup}, {$pull: {'events.$[i].votings.$[j].choices.$[].users': req.session.username} }, {arrayFilters: [{$and: [{'i.title': req.body.selectedEvent.title}, {'i.created': new Date(req.body.selectedEvent.created)}]}, {'j.title': req.body.selectedVoting.title}]}, function(err, doc) {
+        GroupVotings.update({'groupName': req.session.selectedGroup.title}, {$pull: {'events.$[i].votings.$[j].choices.$[].users': req.session.username} }, {arrayFilters: [{$and: [{'i.title': req.body.selectedEvent.title}, {'i.created': new Date(req.body.selectedEvent.created)}]}, {'j.title': req.body.selectedVoting.title}]}, function(err, doc) {
             if(err) return res.send({"object": "","message": "saveCheckedChoice(): " + err});
             // add current choice:
-            GroupVotings.findOneAndUpdate({'groupName': req.session.selectedGroup}, {$push: {'events.$[i].votings.$[j].choices.$[k].users': req.session.username} }, {arrayFilters: [{$and: [{'i.title': req.body.selectedEvent.title}, {'i.created': new Date(req.body.selectedEvent.created)}]}, {'j.title': req.body.selectedVoting.title}, {'k.title': req.body.votingItem}], "new": true}, function(err, doc) {
+            GroupVotings.findOneAndUpdate({'groupName': req.session.selectedGroup.title}, {$push: {'events.$[i].votings.$[j].choices.$[k].users': req.session.username} }, {arrayFilters: [{$and: [{'i.title': req.body.selectedEvent.title}, {'i.created': new Date(req.body.selectedEvent.created)}]}, {'j.title': req.body.selectedVoting.title}, {'k.title': req.body.votingItem}], "new": true}, function(err, doc) {
                 if(err) return res.send({"object": "", "message": "saveCheckedChoice(): " + err});
                 // update the result field of the updated voting:
                 var newResult = "";
@@ -378,7 +396,7 @@ router.post('/saveCheckedChoice', function(req, res) {
                     }
                 });
                 if(newResult != "") {
-                    GroupVotings.findOneAndUpdate({'groupName': req.session.selectedGroup}, {$set: {'events.$[i].votings.$[j].result': {"title": newResult,"quantity": highestNumber}} }, {arrayFilters: [{$and: [{'i.title': req.body.selectedEvent.title}, {'i.created': new Date(req.body.selectedEvent.created)}]}, {'j.title': req.body.selectedVoting.title}], "new": true}, function(err, doc) {
+                    GroupVotings.findOneAndUpdate({'groupName': req.session.selectedGroup.title}, {$set: {'events.$[i].votings.$[j].result': {"title": newResult,"quantity": highestNumber}} }, {arrayFilters: [{$and: [{'i.title': req.body.selectedEvent.title}, {'i.created': new Date(req.body.selectedEvent.created)}]}, {'j.title': req.body.selectedVoting.title}], "new": true}, function(err, doc) {
                         if(err) return res.send({"object": "", "message": "saveCheckedChoice(): " + err});
                         res.send({"object": doc, "message": req.body.votingItem + " wurde ausgewählt. Abstimmungsergebnis wurde aktualisiert."});
                     });
@@ -396,17 +414,17 @@ router.post('/saveCheckedChoice', function(req, res) {
 // chat:
 
 router.post('/saveMessage', function(req, res) {
-    if(req.session.username != null && req.session.selectedGroup != null) {
-        Chat.findOne({groupName: req.session.selectedGroup}, function(err, doc) {
+    if(checkIfSessionNotNull(req)) {
+        Chat.findOne({groupName: req.session.selectedGroup.title}, function(err, doc) {
             if(err) res.send("saveMessage(): Unknown error.");
             if(doc != null && doc != "") {
-                Chat.findOneAndUpdate({'groupName': req.session.selectedGroup}, {$push: {messages: req.body.newMessage}}, function(err, doc) {
+                Chat.findOneAndUpdate({'groupName': req.session.selectedGroup.title}, {$push: {messages: req.body.newMessage}}, function(err, doc) {
                     if(err) return res.send("saveMessage()2: Unknown error.")
                     return res.send("");
                 });
             } else {
                 var chat = new Chat({
-                    groupName: req.session.selectedGroup,
+                    groupName: req.session.selectedGroup.title,
                     messages: req.body.newMessage
                 });
                 chat.save(function (err) {
@@ -421,8 +439,8 @@ router.post('/saveMessage', function(req, res) {
 });
 
 router.post('/loadMessages', function(req, res) {
-    if(req.session.username != null && req.session.selectedGroup != null) {
-        Chat.findOne({groupName: req.session.selectedGroup}, function(err, doc) {
+    if(checkIfSessionNotNull(req)) {
+        Chat.findOne({groupName: req.session.selectedGroup.title}, function(err, doc) {
             if(err) res.send({"doc": "", "message":"loadMessages(): Unknown error."});
             if(doc != null && doc != "") {
                 res.send({"doc": doc, "message": ""});
@@ -440,7 +458,7 @@ router.post('/loadMessages', function(req, res) {
 //socket:
 
 router.post('/getUserId', function(req, res) {
-    if(req.session.username != null && req.session.selectedGroup != null) {
+    if(req.session.username != null) {
         User.findOne({username: req.session.username}, function(err, doc) {
             if(err) return res.send("0");
             if(doc != null && doc != "") {
@@ -453,6 +471,47 @@ router.post('/getUserId', function(req, res) {
         res.send("0");
     }
 });
+
+
+// user messages:
+
+router.post('/getUserMessages', function(req, res) {
+    if(req.session.username != null) {
+        User.findOne({username: req.session.username}, function(err, doc) {
+            if(err) res.send(err.message);
+            if(doc != null) {
+                res.send(doc.messages);
+            } else {
+                console.log("getUserMessages(): User is null");
+                res.send("");
+            }
+        });
+    }
+});
+
+router.post('/acceptUser', function(req, res) {
+    if(req.session.username != null) {
+        User.findOneAndUpdate({'username': req.body.user, 'groups.title': req.body.groupName}, {$set: {'groups.$.status': 1}}, function(err, doc) {
+            if (err) return res.send(err.message);
+            User.findOneAndUpdate({'username': req.session.username}, {$pull: {'messages': {'_id': req.body.messageId}} },function(err, doc) {
+                if (err) return res.send(err.message);
+                res.send("Akzeptiert.")
+            });
+        });
+    }
+})
+
+router.post('/refuseUser', function(req, res) {
+    if(req.session.username != null) {
+        User.findOneAndUpdate({'username': req.body.user}, {$pull: {'groups': {'title': req.body.groupName}}}, function(err, doc) {
+            if (err) return res.send(err.message);
+            User.findOneAndUpdate({'username': req.session.username}, {$pull: {'messages': {'_id': req.body.messageId}} },function(err, doc) {
+                if (err) return res.send(err.message);
+                res.send("Abgelehnt.")
+            });
+        });
+    }
+})
 
 
 module.exports = router;

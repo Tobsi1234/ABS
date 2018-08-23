@@ -41,7 +41,7 @@
                     </ul>
                 </div>
                 <div v-cloak>
-                    <p v-if="sessionUser" class="navbar-link active my-2 my-lg-0"> {{ sessionUser }} ({{ selectedGroup }}) 
+                    <p v-if="sessionUser" class="navbar-link active my-2 my-lg-0"> {{ sessionUser }} <span v-if="selectedGroup">({{ selectedGroup.title }})</span>
                         <button v-on:click="logout" class="btn btn-primary btn-sm">Logout</button></p>
                     <div v-if="!sessionUser">
                         <form style="display: inline;">
@@ -124,9 +124,10 @@
                 methods: {
                     sendMessage: function() {
                         if(navbar.selectedGroup != null && navbar.selectedGroup != '') {
+                            console.log(navbar.selectedGroup.title);
                             var userInput = $('<div/>').text($('#m').val()).html(); // encode user input
                             var message = "<b>" + indexSite.sessionUser + "</b>: " + userInput;
-                            socket.emit('chat message', {groupName:navbar.selectedGroup, message: message});
+                            socket.emit('chat message', {groupName:navbar.selectedGroup.title, message: message});
                             $('#m').val('');
                             $.post("/api/saveMessage", {newMessage: message}, function(result){
                                 if(result != '') {
@@ -179,8 +180,11 @@
                         indexSite.loadMessages();
                         if(navbar.selectedGroup != null && navbar.selectedGroup != "") {
                             leaveSocket();
-                            joinSocket(navbar.selectedGroup)
-                        } 
+                            joinSocket(navbar.selectedGroup.title);
+                        } else {
+                            leaveSocket();
+                            joinSocket();
+                        }
                     }
                 });
                 includePage(href);
@@ -243,17 +247,21 @@
                 socket.on('voting', function(msg) {
                     notify(msg.username + " hat in " + msg.event + " -> " + msg.voting + " abgestimmt.")
                 });
-            
+                socket.on('userMessage', function(msg) {
+                    notify(msg);
+                });
             });
 
             function joinSocket(group) {
-                $.post("/api/getUserId", {}, function(result){
-                    if(result != 0) {
-                        socket.emit("subscribe", { room: group, userId: result});
-                    } else {
-                        notify("Es ist ein Problem beim Beitreten des Chats aufgetreten.");
-                    }
-                });
+                if(navbar.sessionUser != null && navbar.sessionUser != "") {
+                    $.post("/api/getUserId", {}, function(result){
+                        if(result != 0) {
+                            socket.emit("subscribe", { room: group, userId: result});
+                        } else {
+                            notify("Es ist ein Problem beim Beitreten des Chats aufgetreten.");
+                        }
+                    });
+                }
             }
 
             function leaveSocket() {
@@ -261,7 +269,11 @@
             }
 
             function notifyGroupAboutNewVoting(selectedEvent, selectedVoting) {
-                socket.emit('voting', {groupName:navbar.selectedGroup, username:navbar.sessionUser, event: selectedEvent, voting: selectedVoting});
+                socket.emit('voting', {groupName:navbar.selectedGroup.title, username:navbar.sessionUser, event: selectedEvent, voting: selectedVoting});
+            }
+
+            function notifyUserAboutUserMessage(userId) {
+                socket.emit('userMessage', {userId: userId});
             }
             
         </script>
