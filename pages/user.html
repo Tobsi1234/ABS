@@ -25,8 +25,9 @@
         <div>
         <br>
         <button v-if="selectedGroup" v-on:click="exitGroup" class="btn btn-primary btn-sm custom-buttons">Aus aktueller Gruppe austreten</button>
-        </div><br><br>
+        </div>
         <div v-if="messages" id="userMessages">
+            <br><br>
             <div v-for="message in messages" v-bind:value="message">
                 <div v-if="message.messageType === 'MEMBER_NEW'">
                     {{ message.content }} möchte der Gruppe {{ message.groupName}} beitreten. 
@@ -35,6 +36,7 @@
                 </div>   
             </div>
         </div>
+        <br><br>
     </div>
 </div>
 
