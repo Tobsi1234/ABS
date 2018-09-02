@@ -44,7 +44,8 @@
                             <span class="nav-link active"> {{ sessionUser }} <span class="nav-link" v-if="selectedGroup" style="display: inline;">({{ selectedGroup.title }})</span>
                                 <button v-on:click="logout" class="btn btn-primary btn-sm">Logout</button> </span> 
                         </li>
-                        <li v-if="!sessionUser" class="nav-item v-cloak" data-toggle="collapse" data-target=".navbar-collapse.show">
+                        <!-- <li v-if="!sessionUser" class="nav-item v-cloak" data-toggle="collapse" data-target=".navbar-collapse.show"> -->
+                        <li v-if="!sessionUser" class="nav-item v-cloak">
                             <form style="display: inline;">
                                 <input id="username" type="text" v-model="loginUser" autocomplete="username" placeholder="Enter your username">
                                 <input id="password" type="password" v-model="password" autocomplete="current-password" placeholder="Enter your password">
