@@ -29,14 +29,14 @@
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav" v-cloak>
                     <ul class="navbar-nav">
-                        <li v-if="sessionUser" class="nav-item" v-bind:class="{active: currentSite === 'events'}">
-                            <a class="nav-link" href="#events" onclick="return follow(this);" data-toggle="collapse" data-target="#navbarNav">Veranstaltungen</a>
+                        <li v-if="sessionUser" class="nav-item" v-bind:class="{active: currentSite === 'events'}" data-toggle="collapse" data-target=".navbar-collapse.show">
+                            <a class="nav-link" href="#events" onclick="return follow(this);">Veranstaltungen</a>
                         </li>
                         <!--<li class="nav-item" v-bind:class="{active: currentSite === 'settings'}">
                             <a class="nav-link" href="#settings" onclick="return follow(this);" data-toggle="collapse" data-target="#navbarNav">Einstellungen</a>
                         </li>-->
-                        <li v-if="sessionUser" class="nav-item" v-bind:class="{active: currentSite === 'user'}">
-                            <a class="nav-link" href="#user" onclick="return follow(this);" data-toggle="collapse" data-target="#navbarNav">User</a>
+                        <li v-if="sessionUser" class="nav-item" v-bind:class="{active: currentSite === 'user'}" data-toggle="collapse" data-target=".navbar-collapse.show">
+                            <a class="nav-link" href="#user" onclick="return follow(this);">User</a>
                         </li>
                     </ul>
                     <ul class="nav navbar-nav ml-auto">
@@ -44,13 +44,13 @@
                             <span class="nav-link active"> {{ sessionUser }} <span class="nav-link" v-if="selectedGroup" style="display: inline;">({{ selectedGroup.title }})</span>
                                 <button v-on:click="logout" class="btn btn-primary btn-sm">Logout</button> </span> 
                         </li>
-                        <li v-if="!sessionUser" class="nav-item v-cloak">
+                        <li v-if="!sessionUser" class="nav-item v-cloak" data-toggle="collapse" data-target=".navbar-collapse.show">
                             <form style="display: inline;">
                                 <input id="username" type="text" v-model="loginUser" autocomplete="username" placeholder="Enter your username">
                                 <input id="password" type="password" v-model="password" autocomplete="current-password" placeholder="Enter your password">
                                 <button v-on:click="login" class="btn btn-primary btn-sm custom-buttons">Login</button>
                             </form>
-                            <a href="#user" onclick="return follow(this);" data-toggle="collapse" data-target="#navbarNav">Registrieren</a>
+                            <a href="#user" onclick="return follow(this);">Registrieren</a>
                         </li>
                     </ul>
                 </div>
