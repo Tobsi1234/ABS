@@ -3,6 +3,20 @@
     margin-bottom: 4px;
 }
 
+@media (max-width: 404px) {
+    .responsive-input {
+        width: 100%;
+        margin: 5px;
+    }
+    .responsive-button {
+        width: 100%;
+        margin: 5px;
+    }
+    .vdp-datepicker input{
+        width: 100%;
+    }
+}
+
 #messagesDiv {
     border: 1px solid #007bff;
     height: 500px;

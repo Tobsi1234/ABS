@@ -10,11 +10,11 @@
     <div v-if="sessionUser">
         <h2>Eingeloggt als <i> {{ sessionUser }} </i> </h2> 
         <br><br>
-        <input v-model="newGroupName" placeholder="Gruppennamen eingeben">
-        <button v-on:click="createGroup" class="btn btn-outline-primary btn-sm custom-buttons">Neue Gruppe erstellen</button>
+        <input v-model="newGroupName" class="responsive-input" placeholder="Gruppennamen eingeben">
+        <button v-on:click="createGroup" class="btn btn-outline-primary btn-sm custom-buttons responsive-button">Neue Gruppe erstellen</button>
         <br><br>
-        <input v-model="groupName" placeholder="Gruppennamen eingeben">
-        <button v-on:click="enterGroup" class="btn btn-outline-primary btn-sm custom-buttons">Gruppe beitreten</button>
+        <input v-model="groupName" class="responsive-input" placeholder="Gruppennamen eingeben">
+        <button v-on:click="enterGroup" class="btn btn-outline-primary btn-sm custom-buttons responsive-button">Gruppe beitreten</button>
         <br><br>
 
         <select v-model="selectedGroup" @change="selectGroup">

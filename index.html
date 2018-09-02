@@ -30,13 +30,13 @@
                 <div class="collapse navbar-collapse" id="navbarNav" v-cloak>
                     <ul class="navbar-nav">
                         <li v-if="sessionUser" class="nav-item" v-bind:class="{active: currentSite === 'events'}">
-                            <a class="nav-link" href="#events" onclick="return follow(this);">Veranstaltungen</a>
+                            <a class="nav-link" href="#events" onclick="return follow(this);" data-toggle="collapse" data-target="#navbarNav">Veranstaltungen</a>
                         </li>
                         <!--<li class="nav-item" v-bind:class="{active: currentSite === 'settings'}">
-                            <a class="nav-link" href="#settings" onclick="return follow(this);">Einstellungen</a>
+                            <a class="nav-link" href="#settings" onclick="return follow(this);" data-toggle="collapse" data-target="#navbarNav">Einstellungen</a>
                         </li>-->
                         <li v-if="sessionUser" class="nav-item" v-bind:class="{active: currentSite === 'user'}">
-                            <a class="nav-link" href="#user" onclick="return follow(this);">User</a>
+                            <a class="nav-link" href="#user" onclick="return follow(this);" data-toggle="collapse" data-target="#navbarNav">User</a>
                         </li>
                     </ul>
                     <ul class="nav navbar-nav ml-auto">
@@ -50,7 +50,7 @@
                                 <input id="password" type="password" v-model="password" autocomplete="current-password" placeholder="Enter your password">
                                 <button v-on:click="login" class="btn btn-primary btn-sm custom-buttons">Login</button>
                             </form>
-                            <a href="#user" onclick="return follow(this);">Registrieren</a>
+                            <a href="#user" onclick="return follow(this);" data-toggle="collapse" data-target="#navbarNav">Registrieren</a>
                         </li>
                     </ul>
                 </div>

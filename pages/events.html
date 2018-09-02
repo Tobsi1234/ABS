@@ -18,9 +18,8 @@
                     </option>
                 </select>
                 <br><br>
-                <label>Neues Event anlegen: </label><br>
-                <input v-model="newEventName" placeholder="Name des Events eingeben">
-                <button v-on:click="addEvent" class="btn btn-outline-primary btn-sm custom-buttons">Event erstellen</button><br><br>
+                <input v-model="newEventName" class="responsive-input" placeholder="Name des Events eingeben">
+                <button v-on:click="addEvent" class="btn btn-outline-primary btn-sm custom-buttons responsive-button">Neues Event erstellen</button><br><br>
                 <h4>Bevorstehende Veranstaltungen der Gruppe</h4>
                 <ul>
                     <li v-for="event in futureEvents">
@@ -44,8 +43,8 @@
                     <input v-model="newTitle" size="12">
                     <button v-on:click="saveTitleOfEvent" class="btn btn-default btn-sm"><span class="glyphicon">&#x2713;</span></button>
                 </h4>
-                <label style="float:left; margin-right: 5px;">Datum: </label><vuejs-datepicker style="float:left; margin-right: 10px;" v-model="dateOfEvent"></vuejs-datepicker>
-                <button v-on:click="saveEvent" class="btn btn-primary btn-sm">Speichern</button>
+                <vuejs-datepicker style="float:left; margin-right: 10px;" class="responsive-input" v-model="dateOfEvent"></vuejs-datepicker>
+                <button v-on:click="saveEvent" class="btn btn-primary btn-sm responsive-button">Datum speichern</button>
                 <br><br>
 
                 <!-- <ul style="margin: 0; padding: 0;">
@@ -76,10 +75,9 @@
                 </div>
 
                 <br>
-                <label>Neue Abstimmung anlegen: </label>
-                <input v-model="newVotingName" placeholder="Name der Abstimmung eingeben">
+                <input v-model="newVotingName" class="responsive-input" placeholder="Name der Abstimmung eingeben">
                 <!-- input: select type type -->
-                <button v-on:click="addVoting" class="btn btn-outline-primary btn-sm custom-buttons">Abstimmung erstellen</button>
+                <button v-on:click="addVoting" class="btn btn-outline-primary btn-sm custom-buttons responsive-button">Neue Abstimmung erstellen</button>
 
                 <div class="modal fade" id="editVotingModal" tabindex="-1" role="dialog" aria-labelledby="editVotingModelLabel" aria-hidden="true">
                     <div class="modal-dialog" role="document">
