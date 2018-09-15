@@ -7,6 +7,8 @@
         
         <link rel="shortcut icon" href="#">
         <link rel="stylesheet" type="text/css" href="css/my.css" />
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+
         <!-- Bootstrap CSS -->
         <link rel="stylesheet" href="css/bootstrap.min.css" />
         <!-- JQuery -->
@@ -84,6 +86,7 @@
                     currentSite: 'home',
                     sessionUser: '',
                     selectedGroup: '',
+                    selectedEvent: '',
                     loginUser: '',
                     password: ''
                 },
@@ -97,9 +100,10 @@
                                 if(result == "OK") {
                                     navbar.sessionUser = loginUser;
                                     indexSite.sessionUser = loginUser;
-                                    // set /home specific data
-                                    //...
-                                    window.location = "#"; // redirects user to "home", so we only have to load the /home data
+                                    // TODO: set /home specific data
+                                    //  ... TODO: Think about next line...
+                                    // window.location = "#"; // redirects user to "home", so we only have to load the /home data
+                                    location.reload();
                                 } else {
                                     notify("Login fehlgeschlagen: " + result);
                                 }
@@ -110,7 +114,7 @@
                         navbar.sessionUser = '';
                         indexSite.sessionUser = '';
                         navbar.selectedGroup = '';
-                        // reset /home specific data
+                        // TODO: reset /home specific data
                         //...
                         $.post("/api/logout", {}, function(result){
                             window.location = "#"; // redirects user to "home", so we only have to reset the /home data
@@ -126,11 +130,14 @@
                 },
                 methods: {
                     sendMessage: function() {
-                        if(navbar.selectedGroup != null && navbar.selectedGroup != '') {
-                            console.log(navbar.selectedGroup.title);
+                        if(navbar.selectedGroup != null && navbar.selectedGroup.title != '' || navbar.selectedEvent != null && navbar.selectedEvent.title != null) {
                             var userInput = $('<div/>').text($('#m').val()).html(); // encode user input
                             var message = "<b>" + indexSite.sessionUser + "</b>: " + userInput;
-                            socket.emit('chat message', {groupName:navbar.selectedGroup.title, message: message});
+                            if(navbar.selectedGroup.title != "") {
+                                socket.emit('chat message', {groupName: "group:"+navbar.selectedGroup.title, message: message});
+                            } else if(navbar.selectedEvent.title != "") {
+                                socket.emit('chat message', {groupName: "event:"+navbar.selectedEvent.title, message: message});
+                            }
                             $('#m').val('');
                             $.post("/api/saveMessage", {newMessage: message}, function(result){
                                 if(result != '') {
@@ -138,12 +145,12 @@
                                 }
                             });
                         } else {
-                            notify("Keine Gruppe ausgewählt.");
+                            notify("Keine Gruppe oder Event ausgewählt.");
                         }
                     },
                     loadMessages: function() {
                         $('#messages').text("");
-                        if(navbar.selectedGroup != null && navbar.selectedGroup != '') {
+                        if(navbar.selectedGroup != null && navbar.selectedGroup.title != '' || navbar.selectedEvent != null && navbar.selectedEvent.title != null) {
                             $.post("/api/loadMessages", {}, function(result){
                                 if(result != null) {
                                     if(result.doc != "") {
@@ -156,7 +163,8 @@
                                     }
                                 }
                             });
-
+                        } else {
+                            $('#messages').empty();
                         }
                     }
                 }
@@ -177,18 +185,22 @@
                 var href = url.split('#')[1];
                 $.post("/api/session", {}, function(result){
                     if(result != '') {
+                        console.log(result);
                         navbar.sessionUser = result[0];
                         navbar.selectedGroup = result[1];
+                        navbar.selectedEvent = result[2];
                         indexSite.sessionUser = navbar.sessionUser;
                         indexSite.loadMessages();
-                        if(navbar.selectedGroup != null && navbar.selectedGroup != "") {
+                        if(navbar.selectedGroup != null && navbar.selectedGroup.title != "") {
                             leaveSocket();
-                            joinSocket(navbar.selectedGroup.title);
+                            joinSocket(navbar.selectedGroup.title, "group");
+                        } else if(navbar.selectedEvent != null && navbar.selectedEvent.title != "") {
+                            leaveSocket();
+                            joinSocket(navbar.selectedEvent.title, "event");
                         } else {
                             leaveSocket();
-                            joinSocket();
                         }
-                    }
+                    } 
                 });
                 includePage(href);
             }
@@ -199,8 +211,16 @@
 
             function includePage(href) {
                 if(href != undefined && href != '' && href != '#') {
-                    if(href === 'events') {
-                        $("#includePage").load("pages/events.html");
+                    if(href.startsWith('events')) {
+                        var join = href.split('events/')[1];
+                        if(join != null && join != '') {
+                            $.post("/api/handleJoin", {join: join}, function(result){
+                                notify(result);
+                                $("#includePage").load("pages/events.html");
+                            });
+                        } else {
+                            $("#includePage").load("pages/events.html");
+                        }
                     } else if(href === 'settings') {
                         $("#includePage").load("pages/settings.html");
                     } else if(href === 'user') {
@@ -228,7 +248,9 @@
             function updateScroll(){
                 if(!scrolled){
                     var element = document.getElementById("messagesDiv");
-                    element.scrollTop = element.scrollHeight;
+                    if(element != null) {
+                        element.scrollTop = element.scrollHeight;
+                    }
                 }
             }
 
@@ -255,11 +277,11 @@
                 });
             });
 
-            function joinSocket(group) {
+            function joinSocket(group, type) {
                 if(navbar.sessionUser != null && navbar.sessionUser != "") {
                     $.post("/api/getUserId", {}, function(result){
                         if(result != 0) {
-                            socket.emit("subscribe", { room: group, userId: result});
+                            socket.emit("subscribe", {room: group, userId: result, type: type});
                         } else {
                             notify("Es ist ein Problem beim Beitreten des Chats aufgetreten.");
                         }
@@ -269,6 +291,7 @@
 
             function leaveSocket() {
                 socket.emit("unsubscribe", {});
+                $('#messages').empty();
             }
 
             function notifyGroupAboutNewVoting(selectedEvent, selectedVoting) {

@@ -19,6 +19,10 @@ var userSchema = mongoose.Schema({
         title: String, 
         status: Number // 0: Admin, 1: Normal member of group, 2: Requested to be member of group
     }],
+    events: [{ // events which are not within a group
+        title: String, 
+        status: Number // 0: Admin, 1: Normal member of event
+    }],
     messages: [{
         messageType: String, // e.g. "MEMBER_NEW"
         groupName: String,
@@ -65,6 +69,7 @@ var GroupVotings = mongoose.model('GroupVotings', votingSchema);
 
 var chatSchema = mongoose.Schema({
     groupName: String,
+    eventName: String, //either groupName or eventName should be filled
     messages: [String]
 });
 

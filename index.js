@@ -31,7 +31,7 @@ io.on('connection', function(socket){
         io.to(msg.groupName).emit('chat message', msg);
     });
     socket.on('voting', function(msg) {
-        socket.broadcast.to(msg.groupName).emit('voting', msg);
+        socket.broadcast.to("group:"+msg.groupName).emit('voting', msg);
     });
 
     socket.on('userMessage', function(msg) {
@@ -40,13 +40,24 @@ io.on('connection', function(socket){
 
     socket.on('subscribe', function(data) {
         if(data.room != null) {
-            User.findOne({_id: data.userId, 'groups.title': data.room}, function(err, doc) {
-                if(doc != null) {
-                    socket.join(data.room);
-                }
-            });
+            if(data.type === 'group') {
+                User.findOne({_id: data.userId, 'groups.title': data.room}, function(err, doc) {
+                    if(doc != null) {
+                        socket.join("group:"+data.room);
+                    }
+                });
+            } else if(data.type === 'event') {
+                User.findOne({_id: data.userId, 'events.title': data.room}, function(err, doc) {
+                    if(doc != null) {
+                        socket.join("event:"+data.room);
+                    }
+                });
+            } else {
+                console.log("Subscribing failed: " + data);
+            }
+            
         }
-        socket.join(data.userId);   
+        socket.join(data.userId); // used for notifications 
     });
 
     socket.on('unsubscribe', function(data) {
@@ -54,6 +65,7 @@ io.on('connection', function(socket){
         for(var room in rooms) {
             socket.leave(room);
         }
+        socket.join(data.userId); // used for notifications 
     });
 });
 

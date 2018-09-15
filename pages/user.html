@@ -101,16 +101,22 @@
             },
             getGroupsOfSessionUser: function() {
                 $.post("/api/getGroupsOfUser", {}, function(result){
-                    userView.groups = result;
+                    userView.groups = [{title: "", status: 0}];
+                    userView.groups.push.apply(userView.groups, result);
                 });
             },
             selectGroup: function() {
                 $.post("/api/selectGroup", {selectedGroup: userView.selectedGroup}, function(result){
                     navbar.selectedGroup = userView.selectedGroup;
-                    indexSite.loadMessages();
-                    // if successful:
-                    leaveSocket();
-                    joinSocket(userView.selectedGroup.title);
+                    navbar.selectedEvent = null;
+                    if(userView.selectedGroup.title != '') {
+                        indexSite.loadMessages();
+                        // if successful:
+                        leaveSocket();
+                        joinSocket(userView.selectedGroup.title, "group");
+                    } else {
+                        leaveSocket();
+                    }
                 });
             },
             getUserMessages: function() {

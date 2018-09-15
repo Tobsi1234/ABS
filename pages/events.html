@@ -1,113 +1,106 @@
 <div id="events">
     <div v-if="sessionUser">
-        <div v-if="!selectedGroup">
-            <label>Wähle eine Gruppe: </label>
-            <select v-model="selectedGroup" @change="selectGroup">
-                <option v-for="group in groups" v-bind:value="group">
-                    {{ group.title }}
-                </option>
-            </select>
-        </div>
-        <div v-if="selectedGroup">
-            <div v-if="!selectedEvent">
-                <h3>Veranstaltungen in <i>{{ selectedGroup.title }}</i></h3><br>
-                <label>Wähle eine andere Gruppe: </label>
+        <div v-if="!selectedEvent">
+            <h3 v-if="selectedGroup.title">Veranstaltungen in <i>{{ selectedGroup.title }}</i></h3><br>
+            <div v-if="groups.length > 1">
+                <label>Wähle eine Gruppe: </label>
                 <select v-model="selectedGroup" @change="selectGroup">
                     <option v-for="group in groups" :key="group.title" v-bind:value="group">
                         {{ group.title }}
                     </option>
                 </select>
                 <br><br>
-                <input v-model="newEventName" class="responsive-input" placeholder="Name des Events eingeben">
-                <button v-on:click="addEvent" class="btn btn-outline-primary btn-sm custom-buttons responsive-button">Neues Event erstellen</button><br><br>
-                <h4>Bevorstehende Veranstaltungen der Gruppe</h4>
-                <ul>
-                    <li v-for="event in futureEvents">
-                        <a href="" onclick="return false;" v-on:click="openEvent(event)">{{ event.title }} ({{ event.date }})</a>
-                    </li>
-                </ul>
-                <h4>Vergangene Veranstaltungen der Gruppe</h4>
-                <ul>
-                    <li v-for="event in previousEvents">
-                        <a href="" onclick="return false;" v-on:click="openEvent(event)">{{ event.title }} ({{ event.date }})</a>
-                    </li>
-                </ul>
             </div>
-            <div v-if="selectedEvent">
-                <button style="float:right" v-on:click="closeEvent" class="btn btn-outline-primary btn-sm"><span class="glyphicon">&#x2613;</span></button>
-                <h3 v-if="!editMode" style="text-align: center">
-                    {{ selectedEvent.title }}
-                    <button v-on:click="editTitleOfEvent" class="btn btn-default btn-sm"><span class="glyphicon">&#x270f;</span></button>
-                </h3>
-                <h4 v-if="editMode" style="text-align: center">
-                    <input v-model="newTitle" size="12">
-                    <button v-on:click="saveTitleOfEvent" class="btn btn-default btn-sm"><span class="glyphicon">&#x2713;</span></button>
-                </h4>
-                <vuejs-datepicker style="float:left; margin-right: 10px;" class="responsive-input" v-model="dateOfEvent"></vuejs-datepicker>
-                <button v-on:click="saveEvent" class="btn btn-primary btn-sm responsive-button">Datum speichern</button>
-                <br><br>
-
-                <!-- <ul style="margin: 0; padding: 0;">
-                    <!-<li v-for="voting in votings">
-                        <a href="" onclick="return false;" v-on:click="">{{ voting.title }} ({{ voting.created }})</a>
-                    </li>->
-                    <li is="votingItem" v-for="voting in votings" :key="voting._id" v-bind:voting="voting">
-                    </li>
-                </ul>-->
-
-                <!-- The use of an accordion in the following lines is important to have unique IDs (title of choice is only unique in one voting) 
-                    and to make sure {{checkedChoice}} has the value of the correct voting -->
-                <div id="accordion">
-                    <div v-for="voting in votings" :key="voting._id" class="card">
-                        <div class="card-header">
-                            <a :href="voting.idHash" v-on:click="preselectChoice(voting)" data-toggle="collapse" role="button" aria-expanded="false" aria-controls="collapseExample">{{ voting.title }}</a>
-                            <button v-on:click="editVoting(voting)" class="btn btn-default btn-sm" data-toggle="modal" data-target="#editVotingModal" style="background-color: transparent"><span class="glyphicon">&#x270f;</span></button><br>
-                        </div>
-                        <div v-if="voting.choices[0]" :id="voting._id" class="collapse" data-parent="#accordion">
-                            <label v-if="voting.result">Ergebis mit {{voting.result.quantity}} Stimme(n): "{{voting.result.title}}"</label> 
-                            <div v-for="choice in voting.choices" :key="choice.title">
-                                <input type="radio" :id="choice.title" :value="choice.title" v-model="checkedChoice">
-                                <label :for="choice.title">{{ choice.title }}</label>
-                            </div>
-                            <button v-on:click="saveCheckedChoice(voting)" class="btn btn-primary btn-sm">Speichern</button>
-                        </div>
-                    </div>
-                </div>
-
-                <br>
-                <input v-model="newVotingName" class="responsive-input" placeholder="Name der Abstimmung eingeben">
-                <!-- input: select type type -->
-                <button v-on:click="addVoting" class="btn btn-outline-primary btn-sm custom-buttons responsive-button">Neue Abstimmung erstellen</button>
-
-                <div class="modal fade" id="editVotingModal" tabindex="-1" role="dialog" aria-labelledby="editVotingModelLabel" aria-hidden="true">
-                    <div class="modal-dialog" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="editVotingModelLabel">{{ selectedVoting.title }}</h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-                                <div v-for="choice in choices">
-                                    {{ choice.title }} 
-                                    <button v-on:click="removeVotingItem(choice.title)" class="btn btn-default btn-sm"><span class="glyphicon">&#x2613;</span></button><br>
-                                </div>
-                                <br>
-                                <input v-model="newVotingItem" style="width: 80%">
-                                <button v-on:click="saveVotingItem" class="btn btn-default btn-sm"><span class="glyphicon">&#x2795;</span></button>
-                            
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
-                                <!-- <button type="button" class="btn btn-primary">Save changes</button> -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <br><br>
+            <input v-model="newEventName" class="responsive-input" placeholder="Name des Events eingeben">
+            <button v-on:click="addEvent" class="btn btn-outline-primary btn-sm custom-buttons responsive-button">Neues Event erstellen</button><br><br>
+            <h4>Bevorstehende Veranstaltungen</h4>
+            <ul>
+                <li v-for="event in futureEvents">
+                    <a href="" onclick="return false;" v-on:click="openEvent(event)">{{ event.title }} ({{ event.date }})</a>
+                </li>
+            </ul>
+            <h4>Vergangene Veranstaltungen</h4>
+            <ul>
+                <li v-for="event in previousEvents">
+                    <a href="" onclick="return false;" v-on:click="openEvent(event)">{{ event.title }} ({{ event.date }})</a>
+                </li>
+            </ul>
         </div>
+        <div v-if="selectedEvent">
+            <button style="float:right" v-on:click="closeEvent" class="btn btn-outline-primary btn-sm"><span class="glyphicon">&#x2613;</span></button>
+            <h3 v-if="!editMode" style="text-align: center">
+                {{ selectedEvent.title }}
+                <button v-on:click="editTitleOfEvent" class="btn btn-default btn-sm"><span class="glyphicon">&#x270f;</span></button>
+                <button id="shareEvent" v-on:click="shareEvent" class="btn btn-default btn-sm" data-container="body" data-toggle="popover" data-placement="bottom"><i class="fas fa-share-square"></i></button>
+            </h3>
+            <h4 v-if="editMode" style="text-align: center">
+                <input v-model="newTitle" size="12">
+                <button v-on:click="saveTitleOfEvent" class="btn btn-default btn-sm"><span class="glyphicon">&#x2713;</span></button>
+            </h4>
+            <vuejs-datepicker style="float:left; margin-right: 10px;" class="responsive-input" v-model="dateOfEvent"></vuejs-datepicker>
+            <button v-on:click="saveEvent" class="btn btn-primary btn-sm responsive-button">Datum speichern</button>
+            <br><br>
+
+            <!-- <ul style="margin: 0; padding: 0;">
+                <!-<li v-for="voting in votings">
+                    <a href="" onclick="return false;" v-on:click="">{{ voting.title }} ({{ voting.created }})</a>
+                </li>->
+                <li is="votingItem" v-for="voting in votings" :key="voting._id" v-bind:voting="voting">
+                </li>
+            </ul>-->
+
+            <!-- The use of an accordion in the following lines is important to have unique IDs (title of choice is only unique in one voting) 
+                and to make sure {{checkedChoice}} has the value of the correct voting -->
+            <div id="accordion">
+                <div v-for="voting in votings" :key="voting._id" class="card">
+                    <div class="card-header">
+                        <a :href="voting.idHash" v-on:click="preselectChoice(voting)" data-toggle="collapse" role="button" aria-expanded="false" aria-controls="collapseExample">{{ voting.title }}</a>
+                        <button v-on:click="editVoting(voting)" class="btn btn-default btn-sm" data-toggle="modal" data-target="#editVotingModal" style="background-color: transparent"><span class="glyphicon">&#x270f;</span></button><br>
+                    </div>
+                    <div v-if="voting.choices[0]" :id="voting._id" class="collapse" data-parent="#accordion">
+                        <label v-if="voting.result">Ergebis mit {{voting.result.quantity}} Stimme(n): "{{voting.result.title}}"</label> 
+                        <div v-for="choice in voting.choices" :key="choice.title">
+                            <input type="radio" :id="choice.title" :value="choice.title" v-model="checkedChoice">
+                            <label :for="choice.title">{{ choice.title }}</label>
+                        </div>
+                        <button v-on:click="saveCheckedChoice(voting)" class="btn btn-primary btn-sm">Speichern</button>
+                    </div>
+                </div>
+            </div>
+
+            <br>
+            <input v-model="newVotingName" class="responsive-input" placeholder="Name der Abstimmung eingeben">
+            <!-- input: select type type -->
+            <button v-on:click="addVoting" class="btn btn-outline-primary btn-sm custom-buttons responsive-button">Neue Abstimmung erstellen</button>
+
+            <div class="modal fade" id="editVotingModal" tabindex="-1" role="dialog" aria-labelledby="editVotingModelLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editVotingModelLabel">{{ selectedVoting.title }}</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div v-for="choice in choices">
+                                {{ choice.title }} 
+                                <button v-on:click="removeVotingItem(choice.title)" class="btn btn-default btn-sm"><span class="glyphicon">&#x2613;</span></button><br>
+                            </div>
+                            <br>
+                            <input v-model="newVotingItem" style="width: 80%">
+                            <button v-on:click="saveVotingItem" class="btn btn-default btn-sm"><span class="glyphicon">&#x2795;</span></button>
+                        
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                            <!-- <button type="button" class="btn btn-primary">Save changes</button> -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br><br>
     </div>
 </div>
 
@@ -142,7 +135,7 @@
             newEventName: '',
             futureEvents: [],
             previousEvents: [],
-            selectedEvent: '',
+            selectedEvent: navbar.selectedEvent,
             dateOfEvent: '',
             editMode: false,
             newTitle: '',
@@ -159,25 +152,38 @@
         methods: {
             getGroupsOfSessionUser: function() {
                 $.post("/api/getGroupsOfUser", {}, function(result){
-                    eventsView.groups = result;
+                    eventsView.groups = [{title: "", status: 0}];
+                    eventsView.groups.push.apply(eventsView.groups, result);
                 });
             },
             selectGroup: function() {
                 $.post("/api/selectGroup", {selectedGroup: eventsView.selectedGroup}, function(result){
-                    eventsView.getEventsOfSelectedGroup();
-                    eventsView.selectedEvent = '';
+                    eventsView.selectedEvent = null;
+                    navbar.selectedEvent = null;
                     navbar.selectedGroup = eventsView.selectedGroup;
-                    indexSite.loadMessages();
-                    // if successful:
-                    leaveSocket();
-                    joinSocket(eventsView.selectedGroup.title);
+                    if(eventsView.selectedGroup.title !== '') {
+                        eventsView.getEventsOfSelectedGroup();
+                        // TODO: if successful:
+                        indexSite.loadMessages();
+                        leaveSocket();
+                        joinSocket(eventsView.selectedGroup.title, "group");
+                    } else {
+                        eventsView.getEventsOfUser();
+                        leaveSocket();
+                    }
                 });
+                
+                
             },
             addEvent: function() {
                 if(eventsView.newEventName.trim() != "") {
                     $.post("/api/addEvent", {newEventName: eventsView.newEventName.trim()}, function(result){
                         notify("AddEvent: " + result);
-                        eventsView.getEventsOfSelectedGroup();
+                        if(navbar.selectedGroup != null && navbar.selectedGroup.title != "") {
+                            eventsView.getEventsOfSelectedGroup();
+                        } else {
+                            eventsView.getEventsOfUser();
+                        }
                         eventsView.newEventName = "";
                     });
                 }
@@ -196,7 +202,11 @@
                     }
                     var dateString = newDate.getFullYear() + "-" + month + "-" + day;
                     $.post("/api/saveEvent", {eventId: eventsView.selectedEvent._id, newDate: dateString}, function(result){
-                        eventsView.getEventsOfSelectedGroup();
+                        if(navbar.selectedGroup != null && navbar.selectedGroup.title != "") {
+                            eventsView.getEventsOfSelectedGroup();
+                        } else {
+                            eventsView.getEventsOfUser();
+                        }
                         notify("SaveEvent: " + result);
                     });
                 } 
@@ -231,15 +241,62 @@
                     }
                 });
             },
+            getEventsOfUser: function() {
+                $.post("/api/getEventsOfUser", {}, function(result){
+                    console.log(result);
+                    if(result != null && result != "") {
+                        var today = new Date();
+                        var dd = today.getDate();
+                        var mm = today.getMonth()+1; //January is 0!
+                        var yyyy = today.getFullYear();
+
+                        if(dd<10) dd = '0'+dd
+                        if(mm<10) mm = '0'+mm
+
+                        today = yyyy + '-' + mm + '-' + dd;
+
+                        var futureEvents = [];
+                        var previousEvents = [];
+                        result.forEach(element => {
+                            if(element.date >= today || element.date == null) {
+                                futureEvents.push(element);
+                            } else {
+                                previousEvents.unshift(element);
+                            }
+                        });
+                        eventsView.futureEvents = futureEvents;
+                        eventsView.previousEvents = previousEvents;
+                    } else {
+                        eventsView.futureEvents = "";
+                        eventsView.previousEvents = "";
+                    }
+                });
+            },
             openEvent: function (event) {
                 eventsView.selectedEvent = event;
                 eventsView.dateOfEvent = event.date;
                 eventsView.getVotingsOfSelectedEvent();
+                navbar.selectedEvent = eventsView.selectedEvent;
+                $.post("/api/selectEvent", {selectedEvent: eventsView.selectedEvent}, function(){
+                    // TODO: if successful:
+                    if(eventsView.selectedGroup.title === '') {
+                        indexSite.loadMessages();
+                        leaveSocket();
+                        joinSocket(eventsView.selectedEvent.title, "event");
+                    }
+                });
             },
             closeEvent: function () {
+                $('#shareEvent').popover('hide');
                 eventsView.selectedEvent = '';
+                navbar.selectedEvent = '';
                 eventsView.newVotingName = '';
                 eventsView.editMode = false;
+                $.post("/api/unselectEvent", {}, function(){
+                });
+                if(eventsView.selectedGroup.title === '') {
+                    leaveSocket();
+                }
             },
             editTitleOfEvent: function() {
                 eventsView.editMode = true;
@@ -252,6 +309,19 @@
                     });
                 }
                 eventsView.editMode = false;
+            },
+            shareEvent: function() {
+                var href = window.location.href.split('events')[0];
+                $('#shareEvent').popover({content: "<div>"+href+'events/join/event/'+eventsView.selectedEvent._id+' <a onclick="eventsView.copyToClipboard(); return false;" href="#"><i class="far fa-copy"></i></span></div>', html: true}).show();
+            },
+            copyToClipboard: function () {
+                var href = window.location.href.split('events')[0];
+                var text = href+'events/join/event/'+eventsView.selectedEvent._id;
+                var $temp = $("<input>");
+                $("body").append($temp);
+                $temp.val(text).select();
+                document.execCommand("copy");
+                $temp.remove();
             },
             // Votings:
             editVoting: function(voting) {
@@ -341,13 +411,16 @@
 
     if(navbar.sessionUser != null && navbar.sessionUser != '') {
         eventsView.getGroupsOfSessionUser();
-        if(navbar.selectedGroup != null && navbar.selectedGroup != "") {
+        if(navbar.selectedGroup != null && navbar.selectedGroup.title != "") {
             eventsView.getEventsOfSelectedGroup();
+        } else if(navbar.selectedGroup != null) {
+            eventsView.getEventsOfUser();
         }
     } else {
-        window.location = "#";
+        $("#includePage").load("pages/home.html");
     }
 
+    // close Event by clicking ESC
     document.onkeydown = function(evt) {
         evt = evt || window.event;
         var isEscape = false;
@@ -356,9 +429,22 @@
         } else {
             isEscape = (evt.keyCode == 27);
         }
-        if (isEscape) {
+        let hidden = $('#editVotingModal').attr('aria-hidden');
+        if (isEscape && hidden) {
             eventsView.closeEvent();
         }
     };
+
+    // close popover (shareEvent) by clicking somewhere
+    $(document).on('click', function (e) {
+        $('[data-toggle="popover"],[data-original-title]').each(function () {
+            //the 'is' for buttons that trigger popups
+            //the 'has' for icons within a button that triggers a popup
+            if (!$(this).is(e.target) && $(this).has(e.target).length === 0 && $('.popover').has(e.target).length === 0) {                
+                (($(this).popover('hide').data('bs.popover')||{}).inState||{}).click = false  // fix for BS 3.3.6
+            }
+
+        });
+    });
 
 </script>

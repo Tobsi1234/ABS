@@ -10,6 +10,14 @@ var GroupVotings = db.GroupVotings;
 var Chat = db.Chat;
 
 function checkIfSessionNotNull(req) {
+    if(req.session.username != null && req.session.username != '') {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+function checkIfSessionAndGroupNotNull(req) {
     if(req.session.username != null && req.session.selectedGroup != null && req.session.selectedGroup.title != null) {
         return true;
     } else {
@@ -45,7 +53,7 @@ router.get('/chat', function(req, res) {
 });
 
 router.post('/session', function(req, res) {
-    res.send([req.session.username, req.session.selectedGroup]);
+    res.send([req.session.username, req.session.selectedGroup, req.session.selectedEvent]);
 });
 
 //Create new user
@@ -77,6 +85,7 @@ router.post('/login', function(req, res) {
         } else {
             if(docs[0].password != null && passwordHash.verify(req.body.password, docs[0].password)) {
                 req.session.username = docs[0].username;
+                req.session.selectedGroup = {title: "", status: 0};
                 res.sendStatus(200);
             } else {
                 res.send("Passwort falsch.");
@@ -147,7 +156,7 @@ router.post('/enterGroup', function(req, res) {
 });
 
 router.post('/exitGroup', function(req, res) {
-    if(checkIfSessionNotNull(req)) {
+    if(checkIfSessionAndGroupNotNull(req)) {
         User.update({username: req.session.username}, {$pull: {'groups': {'title': req.session.selectedGroup.title}} }, function(err, doc) {
             if(err) res.send("Unknown error.");
             req.session.selectedGroup = "";
@@ -180,41 +189,102 @@ router.post('/getGroupsOfUser', function(req, res) {
 });
 
 router.post('/selectGroup', function(req, res) {
-    User.findOne({username: req.session.username, 'groups.title': req.body.selectedGroup.title}, function(err, doc) {
-        if(err) res.send("SelectGroup(): Unknown error.");
-        if(doc != null) {
-            req.session.selectedGroup = req.body.selectedGroup;
-            console.log("selectGroup: " + req.body.selectedGroup);
-        } else {
-            console.log("Select Group: The user " + req.session.username + " is not in group " + req.body.selectedGroup);
-        }
-        console.log(req.session.selectedGroup);
+    req.session.selectedEvent = null;
+    if(req.body.selectedGroup.title === "") {
+        req.session.selectedGroup = {title: "", status: 0};
         res.send("");
-    });
+    } else {
+        User.findOne({username: req.session.username, 'groups.title': req.body.selectedGroup.title}, function(err, doc) {
+            if(err) res.send("SelectGroup(): Unknown error.");
+            if(doc != null) {
+                req.session.selectedGroup = req.body.selectedGroup;
+            } else {
+                console.log("Select Group: The user " + req.session.username + " is not in group " + req.body.selectedGroup);
+            }
+            console.log(req.session.selectedGroup);
+            res.send("");
+        });
+    }
+});
+
+router.post('/selectEvent', function(req, res) {
+    if(req.session.selectedGroup.title != "") {
+        req.session.selectedEvent = req.body.selectedEvent;
+        res.send("");
+    } else {
+        User.findOne({username: req.session.username, 'events.title': req.body.selectedEvent.title}, function(err, doc) {
+            if(err) res.send("SelectEvent(): Unknown error.");
+            if(doc != null) {
+                req.session.selectedEvent = req.body.selectedEvent;
+            } else {
+                console.log("Select Event: The user " + req.session.username + " is not in event " + req.body.selectedEvent);
+            }
+            res.send("");
+        });
+    }
+});
+
+router.post('/unselectEvent', function(req,res) {
+    req.session.selectedEvent = null;
+    res.send("");
 });
 
 router.post('/addEvent', function(req, res) {
     if(checkIfSessionNotNull(req)) {
-        GroupEvents.findOne({groupName: req.session.selectedGroup.title}, function(err, doc) {
-            if(err) return res.send("Unknown error.");
-            if(doc != null && doc != "") {
-                GroupEvents.update({groupName: req.session.selectedGroup.title}, {$push: {'details': {'title': req.body.newEventName, 'created': new Date()}} }, function(err, doc) { 
-                    res.send("Neues Event wurde zur Gruppe hinzugefügt.");
-                });
-            } else {
-                var newGroupEvent = new GroupEvents({
-                    groupName: req.session.selectedGroup.title,
-                    details: {
-                        title: req.body.newEventName,
-                        created: new Date()
-                    }
-                });
-                newGroupEvent.save(function (err) {
-                    if (err) return res.send("Unknown error.");
-                    res.send("Erstes Event der Gruppe wurde angelegt.");
-                });
-            }
-        });
+        if(req.session.selectedGroup.title != "") {
+            GroupEvents.findOne({groupName: req.session.selectedGroup.title}, function(err, doc) {
+                if(err) return res.send("Unknown error.");
+                if(doc != null && doc != "") {
+                    GroupEvents.update({groupName: req.session.selectedGroup.title}, {$push: {'details': {'title': req.body.newEventName, 'created': new Date()}} }, function(err, doc) { 
+                        res.send("Neues Event wurde zur Gruppe hinzugefügt.");
+                    });
+                } else {
+                    var newGroupEvent = new GroupEvents({
+                        groupName: req.session.selectedGroup.title,
+                        details: {
+                            title: req.body.newEventName,
+                            created: new Date()
+                        }
+                    });
+                    newGroupEvent.save(function (err) {
+                        if (err) return res.send("Unknown error.");
+                        res.send("Erstes Event der Gruppe wurde angelegt.");
+                    });
+                }
+            });
+        } else {
+            GroupEvents.findOne({groupName: "", 'details.title': req.body.newEventName}, function(err, doc) {
+                if(err) return res.send("Unknown error.");
+                if(doc != null && doc != "") {
+                    res.send("Eventname bereits vergeben.");
+                } else {
+                    User.update({username: req.session.username}, {$push: {'events': {'title': req.body.newEventName, 'status': 0}} }, function(err, count) {
+                        if (err) res.send("Unknown error.");
+                        GroupEvents.findOne({groupName: ''}, function(err, doc) {
+                            if(err) return res.send("Unknown error.");
+                            if(doc != null && doc != "") {
+                                GroupEvents.update({groupName: ''}, {$push: {'details': {'title': req.body.newEventName, 'created': new Date()}} }, function(err, doc) { 
+                                    res.send("Neues Event ohne Gruppe wurde hinzugefügt.");
+                                });
+                            } else {
+                                var newGroupEvent = new GroupEvents({
+                                    groupName: '',
+                                    details: {
+                                        title: req.body.newEventName,
+                                        created: new Date()
+                                    }
+                                });
+                                newGroupEvent.save(function (err) {
+                                    if (err) return res.send("Unknown error.");
+                                    res.send("Erstes Event ohne Gruppe wurde angelegt.");
+                                });
+                            }
+                        });
+                    });
+                }
+            });
+        }
+        
     } else {
         res.send("addEvent(): Username null oder keine Gruppe ausgewählt.");
     }
@@ -243,7 +313,7 @@ router.post('/saveNewTitle', function(req, res) {
 });
 
 router.post('/getEventsOfSelectedGroup', function(req, res) {
-    if(checkIfSessionNotNull(req)) {
+    if(checkIfSessionAndGroupNotNull(req)) {
         GroupEvents.findOne({groupName: req.session.selectedGroup.title}, function(err, doc) {
             if(err) return res.send("Unknown error.");
             if(doc != null && doc != "") {
@@ -264,6 +334,102 @@ router.post('/getEventsOfSelectedGroup', function(req, res) {
         res.send("getEventsOfSelectedGroup(): Username null oder keine Gruppe ausgewählt.");
     }
 });
+
+router.post('/getEventsOfUser', function(req, res) {
+    if(checkIfSessionNotNull(req)) {
+        GroupEvents.findOne({groupName: ''}, function(err, eventDoc) {
+            if(err) return res.send("Unknown error.");
+            if(eventDoc != null && eventDoc != "") {
+                User.findOne({username: req.session.username}, function(err, doc) {
+                    if(err) return res.send("Unknown error.");
+                    if(doc != null && doc != "") {
+                        var userEvents = [];
+                        let i = 0; const iMax = eventDoc.details.length; 
+                        for(; i < iMax; i++) {
+                            doc.events.forEach(event => {
+                                if(eventDoc.details[i].title === event.title) {
+                                    userEvents.push(eventDoc.details[i]);
+                                }
+                            });
+                        }
+                        userEvents.sort(function(a,b) {
+                            if (a.date == null && b.date == null) {return 0;}
+                            else if (a.date == null) {return -1;} // events without a date should be displayed on top
+                            else if (b.date == null) {return 1;}
+                            else if (a.date > b.date) {return 1;}
+                            else if (b.date > a.date) {return -1;} 
+                            return 0;
+                        });
+                        res.send(userEvents);
+                    }
+                });
+            } else {
+                res.send("");
+            }
+        });
+    } else {
+        res.send("getEventsOfSelectedGroup(): Username null oder keine Gruppe ausgewählt.");
+    }
+});
+
+router.post('/handleJoin', function(req, res) {
+    if(checkIfSessionNotNull(req)) {
+        var join = req.body.join;
+        if(join.includes('join/event/')) {
+            var joinId = join.split('join/event/')[1];
+            if(joinId != '') {
+                if(joinId.includes('/')) {
+                    joinId = joinId.split('/')[0];
+                }
+                if(joinId != '') {
+                    GroupEvents.find({groupName:''},{details: {$elemMatch: {_id: joinId}}}, function(err, doc) {
+                        if(err) return res.send("handleJoin(): " + err);
+                        if(doc != null) {
+                            var eventTitle = doc[0].details[0].title;
+                            User.findOne({username:req.session.username}, function(err, user) {
+                                if(err) return res.send("handleJoin(): " + err);
+                                if(user.events != null) {
+                                    var isIn = false;
+                                    user.events.forEach(event => {
+                                        if(event.title === eventTitle) {
+                                            isIn = true;
+                                        }
+                                    });
+                                    if(isIn) {
+                                        res.send("Du bist bereits in dem Event '" + eventTitle + "'");
+                                    } else {
+                                        User.update({username:req.session.username}, {$push: {events: {title: eventTitle, status: 1}} }, function(err) {
+                                            if(err) return res.send("handleJoin(): " + err);
+                                            res.send("Dem Event '" + eventTitle + "' wurde beigetreten.");
+                                        });
+                                    }
+                                } else {
+                                    User.update({username:req.session.username}, {$push: {events: {title: eventTitle, status: 1}} }, function(err) {
+                                        if(err) return res.send("handleJoin(): " + err);
+                                        res.send("Dem Event '" + eventTitle + "' wurde beigetreten.");
+                                    });     
+                                }
+                            });
+                        } else {
+                            res.send(joinId + " ist nicht vorhanden.");
+                        }
+                    });
+                } else {
+                    res.send(joinId + " ist nicht vorhanden.");
+                }    
+            } else {
+                res.send(joinId + " ist nicht vorhanden.");
+            }
+        } else {
+            res.send(join + " cannot be parsed.");
+        }
+    } else {
+        res.send("Nicht eingeloggt.")
+    }
+});
+
+
+// voting:
 
 router.post('/addVoting', function(req, res) {
     if(checkIfSessionNotNull(req)) {
@@ -415,24 +581,47 @@ router.post('/saveCheckedChoice', function(req, res) {
 
 router.post('/saveMessage', function(req, res) {
     if(checkIfSessionNotNull(req)) {
-        Chat.findOne({groupName: req.session.selectedGroup.title}, function(err, doc) {
-            if(err) res.send("saveMessage(): Unknown error.");
-            if(doc != null && doc != "") {
-                Chat.findOneAndUpdate({'groupName': req.session.selectedGroup.title}, {$push: {messages: req.body.newMessage}}, function(err, doc) {
-                    if(err) return res.send("saveMessage()2: Unknown error.")
-                    return res.send("");
-                });
-            } else {
-                var chat = new Chat({
-                    groupName: req.session.selectedGroup.title,
-                    messages: req.body.newMessage
-                });
-                chat.save(function (err) {
-                    if (err) return res.send("saveMessage()3: Unknown error.");
-                    return res.send("");
-                });
-            }
-        });
+        if(req.session.selectedGroup.title != '') {
+            Chat.findOne({groupName: req.session.selectedGroup.title}, function(err, doc) {
+                if(err) res.send("saveMessage(): Unknown error.");
+                if(doc != null && doc != "") {
+                    Chat.findOneAndUpdate({'groupName': req.session.selectedGroup.title}, {$push: {messages: req.body.newMessage}}, function(err, doc) {
+                        if(err) return res.send("saveMessage()2: Unknown error.")
+                        return res.send("");
+                    });
+                } else {
+                    var chat = new Chat({
+                        groupName: req.session.selectedGroup.title,
+                        messages: req.body.newMessage
+                    });
+                    chat.save(function (err) {
+                        if (err) return res.send("saveMessage()3: Unknown error.");
+                        return res.send("");
+                    });
+                }
+            });
+        } else if (req.session.selectedEvent.title != '') {
+            Chat.findOne({eventName: req.session.selectedEvent.title}, function(err, doc) {
+                if(err) res.send("saveMessage()2.1: Unknown error.");
+                if(doc != null && doc != "") {
+                    Chat.findOneAndUpdate({'eventName': req.session.selectedEvent.title}, {$push: {messages: req.body.newMessage}}, function(err, doc) {
+                        if(err) return res.send("saveMessage()2.2: Unknown error.")
+                        return res.send("");
+                    });
+                } else {
+                    var chat = new Chat({
+                        eventName: req.session.selectedEvent.title,
+                        messages: req.body.newMessage
+                    });
+                    chat.save(function (err) {
+                        if (err) return res.send("saveMessage()2.3: Unknown error.");
+                        return res.send("");
+                    });
+                }
+            });
+        } else {
+            res.send("saveMessage(): Username null oder keine Gruppe/Event ausgewählt.");
+        }
     } else {
         res.send("saveMessage(): Username null oder keine Gruppe ausgewählt.");
     }
@@ -440,16 +629,30 @@ router.post('/saveMessage', function(req, res) {
 
 router.post('/loadMessages', function(req, res) {
     if(checkIfSessionNotNull(req)) {
-        Chat.findOne({groupName: req.session.selectedGroup.title}, function(err, doc) {
-            if(err) res.send({"doc": "", "message":"loadMessages(): Unknown error."});
-            if(doc != null && doc != "") {
-                res.send({"doc": doc, "message": ""});
-            } else {
-                res.send({"doc": "", "message":""});
-            }
-        });
+        if(req.session.selectedGroup.title != '') {
+            Chat.findOne({groupName: req.session.selectedGroup.title}, function(err, doc) {
+                if(err) res.send({"doc": "", "message":"loadMessages(): Unknown error."});
+                if(doc != null && doc != "") {
+                    res.send({"doc": doc, "message": ""});
+                } else {
+                    res.send({"doc": "", "message":""});
+                }
+            });
+        } else if (req.session.selectedEvent.title != '') {
+            Chat.findOne({eventName: req.session.selectedEvent.title}, function(err, doc) {
+                if(err) res.send({"doc": "", "message":"loadMessages(): Unknown error."});
+                if(doc != null && doc != "") {
+                    res.send({"doc": doc, "message": ""});
+                } else {
+                    res.send({"doc": "", "message":""});
+                }
+            });
+        } else {
+            res.send({"doc": "", "message":"loadMessages(): Group oder Event null."});
+
+        }
     } else {
-        res.send({"doc": "", "message":"loadMessages(): Username null oder keine Gruppe ausgewählt."});
+        res.send({"doc": "", "message":""});
     }
 
 });
