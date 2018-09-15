@@ -304,8 +304,10 @@
             },
             saveTitleOfEvent: function() {
                 if(eventsView.newTitle.trim() != "") {
+                    // TODO: Check for unique name if not inside of group
                     $.post("/api/saveNewTitle", {selectedEvent: eventsView.selectedEvent, newTitle: eventsView.newTitle.trim()}, function(result){
                         eventsView.selectedEvent.title = eventsView.newTitle;
+                        navbar.selectedEvent.title = eventsView.newTitle;
                     });
                 }
                 eventsView.editMode = false;

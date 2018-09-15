@@ -98,6 +98,7 @@ router.post('/login', function(req, res) {
 router.post('/logout', function(req, res) {
     req.session.username = '';
     req.session.selectedGroup = '';
+    req.session.selectedEvent = null;
     res.end();
 });
 
@@ -303,10 +304,13 @@ router.post('/saveEvent', function(req, res) {
 router.post('/saveNewTitle', function(req, res) {
     if(checkIfSessionNotNull(req)) {
         GroupEvents.update({'details._id': req.body.selectedEvent._id}, {$set:  {'details.$.title': req.body.newTitle}}, function(err, doc) {
-            if(err) return res.send("SaveNewTitle(): Unknown error.");
+            if(err) return res.send("SaveNewTitle(): " + err);
             GroupVotings.update({groupName: req.session.selectedGroup.title, 'events.title': req.body.selectedEvent.title, 'events.created': req.body.selectedEvent.created}, {$set: {'events.$.title': req.body.newTitle} }, function(err, doc) {
-                if(err) return res.send("SaveNewTitle()2: Unknown error.");
-                res.send("Event wurde aktualisiert.");
+                if(err) return res.send("SaveNewTitle()2: " + err);
+                User.update({'events.title': req.body.selectedEvent.title}, {$set: {'events.$.title': req.body.newTitle} }, function(err, doc) {
+                    if(err) return res.send("SaveNewTitle()3: " + err);
+                    res.send("Event wurde aktualisiert.");
+                });
             });
         });
     }
@@ -424,7 +428,8 @@ router.post('/handleJoin', function(req, res) {
             res.send(join + " cannot be parsed.");
         }
     } else {
-        res.send("Nicht eingeloggt.")
+        //res.send("Nicht eingeloggt.")
+        res.send("");
     }
 });
 
@@ -638,7 +643,7 @@ router.post('/loadMessages', function(req, res) {
                     res.send({"doc": "", "message":""});
                 }
             });
-        } else if (req.session.selectedEvent.title != '') {
+        } else if (req.session.selectedEvent != null && req.session.selectedEvent.title != '') {
             Chat.findOne({eventName: req.session.selectedEvent.title}, function(err, doc) {
                 if(err) res.send({"doc": "", "message":"loadMessages(): Unknown error."});
                 if(doc != null && doc != "") {

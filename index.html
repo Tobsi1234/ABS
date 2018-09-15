@@ -114,6 +114,7 @@
                         navbar.sessionUser = '';
                         indexSite.sessionUser = '';
                         navbar.selectedGroup = '';
+                        navbar.selectedEvent = null;
                         // TODO: reset /home specific data
                         //...
                         $.post("/api/logout", {}, function(result){
@@ -237,11 +238,13 @@
             }
 
             function notify(message) {
-                $.notify({
-                    message: message
-                }, {
-                    delay: 1000
-                });
+                if(message != '') {
+                    $.notify({
+                        message: message
+                    }, {
+                        delay: 1000
+                    });
+                }
             }
 
             var scrolled = false;
