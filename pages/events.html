@@ -243,7 +243,6 @@
             },
             getEventsOfUser: function() {
                 $.post("/api/getEventsOfUser", {}, function(result){
-                    console.log(result);
                     if(result != null && result != "") {
                         var today = new Date();
                         var dd = today.getDate();

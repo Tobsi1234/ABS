@@ -381,55 +381,64 @@ router.post('/handleJoin', function(req, res) {
         var join = req.body.join;
         if(join.includes('join/event/')) {
             var joinId = join.split('join/event/')[1];
+        } else if (req.session.joinEvent != undefined && req.session.joinEvent.includes('join/event/')) {
+            var joinId = req.session.joinEvent.split('join/event/')[1];
+        } else {
+            if(join == '') {
+                return res.send("");
+            } else {
+                return res.send(join + " entspricht keinem validen URL-Format.");
+            }
+        }
+        req.session.joinEvent = null;
+        if(joinId != '') {
+            if(joinId.includes('/')) {
+                joinId = joinId.split('/')[0];
+            }
             if(joinId != '') {
-                if(joinId.includes('/')) {
-                    joinId = joinId.split('/')[0];
-                }
-                if(joinId != '') {
-                    GroupEvents.find({groupName:''},{details: {$elemMatch: {_id: joinId}}}, function(err, doc) {
-                        if(err) return res.send("handleJoin(): " + err);
-                        if(doc != null) {
-                            var eventTitle = doc[0].details[0].title;
-                            User.findOne({username:req.session.username}, function(err, user) {
-                                if(err) return res.send("handleJoin(): " + err);
-                                if(user.events != null) {
-                                    var isIn = false;
-                                    user.events.forEach(event => {
-                                        if(event.title === eventTitle) {
-                                            isIn = true;
-                                        }
-                                    });
-                                    if(isIn) {
-                                        res.send("Du bist bereits in dem Event '" + eventTitle + "'");
-                                    } else {
-                                        User.update({username:req.session.username}, {$push: {events: {title: eventTitle, status: 1}} }, function(err) {
-                                            if(err) return res.send("handleJoin(): " + err);
-                                            res.send("Dem Event '" + eventTitle + "' wurde beigetreten.");
-                                        });
+                GroupEvents.find({groupName:''},{details: {$elemMatch: {_id: joinId}}}, function(err, doc) {
+                    if(err) return res.send("handleJoin(): " + err);
+                    if(doc != null) {
+                        var eventTitle = doc[0].details[0].title;
+                        User.findOne({username:req.session.username}, function(err, user) {
+                            if(err) return res.send("handleJoin(): " + err);
+                            if(user.events != null) {
+                                var isIn = false;
+                                user.events.forEach(event => {
+                                    if(event.title === eventTitle) {
+                                        isIn = true;
                                     }
+                                });
+                                if(isIn) {
+                                    res.send("Du bist bereits in dem Event '" + eventTitle + "'");
                                 } else {
                                     User.update({username:req.session.username}, {$push: {events: {title: eventTitle, status: 1}} }, function(err) {
                                         if(err) return res.send("handleJoin(): " + err);
                                         res.send("Dem Event '" + eventTitle + "' wurde beigetreten.");
-                                    });     
+                                    });
                                 }
-                            });
-                        } else {
-                            res.send(joinId + " ist nicht vorhanden.");
-                        }
-                    });
-                } else {
-                    res.send(joinId + " ist nicht vorhanden.");
-                }    
+                            } else {
+                                User.update({username:req.session.username}, {$push: {events: {title: eventTitle, status: 1}} }, function(err) {
+                                    if(err) return res.send("handleJoin(): " + err);
+                                    res.send("Dem Event '" + eventTitle + "' wurde beigetreten.");
+                                });     
+                            }
+                        });
+                    } else {
+                        res.send(joinId + " ist nicht vorhanden.");
+                    }
+                });
             } else {
                 res.send(joinId + " ist nicht vorhanden.");
-            }
+            }    
         } else {
-            res.send(join + " cannot be parsed.");
+            res.send(joinId + " ist nicht vorhanden.");
         }
     } else {
-        //res.send("Nicht eingeloggt.")
-        res.send("");
+        if(req.session.joinEvent == undefined || req.session.joinEvent == '') {
+            req.session.joinEvent = req.body.join;
+        }
+        res.send("Nicht eingeloggt.");
     }
 });
 

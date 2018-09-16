@@ -101,9 +101,11 @@
                                     navbar.sessionUser = loginUser;
                                     indexSite.sessionUser = loginUser;
                                     // TODO: set /home specific data
-                                    //  ... TODO: Think about next line...
-                                    // window.location = "#"; // redirects user to "home", so we only have to load the /home data
-                                    location.reload();
+                                    window.location = "#"; // redirects user to "home", so we only have to load the /home data
+                                    //location.reload();
+                                    $.post("/api/handleJoin", {join: ""}, function(result){
+                                        notify(result);
+                                    });
                                 } else {
                                     notify("Login fehlgeschlagen: " + result);
                                 }
@@ -186,7 +188,6 @@
                 var href = url.split('#')[1];
                 $.post("/api/session", {}, function(result){
                     if(result != '') {
-                        console.log(result);
                         navbar.sessionUser = result[0];
                         navbar.selectedGroup = result[1];
                         navbar.selectedEvent = result[2];
