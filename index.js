@@ -31,7 +31,11 @@ io.on('connection', function(socket){
         io.to(msg.groupName).emit('chat message', msg);
     });
     socket.on('voting', function(msg) {
-        socket.broadcast.to("group:"+msg.groupName).emit('voting', msg);
+        if(msg.type === 'group') {
+            socket.broadcast.to(msg.type+":"+msg.groupName).emit('voting', msg);
+        } else if(msg.type === 'event') {
+            socket.broadcast.to(msg.type+":"+msg.event).emit('voting', msg);
+        }
     });
 
     socket.on('userMessage', function(msg) {

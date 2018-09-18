@@ -27,15 +27,15 @@
             </ul>
         </div>
         <div v-if="selectedEvent">
-            <button style="float:right" v-on:click="closeEvent" class="btn btn-outline-primary btn-sm"><span class="glyphicon">&#x2613;</span></button>
+            <button style="float:right" v-on:click="closeEvent" class="btn btn-outline-primary btn-sm"><i class="fas fa-times"></i></button>
             <h3 v-if="!editMode" style="text-align: center">
                 {{ selectedEvent.title }}
-                <button v-on:click="editTitleOfEvent" class="btn btn-default btn-sm"><span class="glyphicon">&#x270f;</span></button>
-                <button id="shareEvent" v-on:click="shareEvent" class="btn btn-default btn-sm" data-container="body" data-toggle="popover" data-placement="bottom"><i class="fas fa-share-square"></i></button>
+                <button v-on:click="editTitleOfEvent" class="btn btn-default btn-sm"><i class="custom-icon far fa-edit"></i></button>
+                <button id="shareEvent" v-on:click="shareEvent"  style="margin-left: -8px;" class="btn btn-default btn-sm" data-container="body" data-toggle="popover" data-placement="bottom"><i class="custom-icon fas fa-share-square"></i></button>
             </h3>
             <h4 v-if="editMode" style="text-align: center">
                 <input v-model="newTitle" size="12">
-                <button v-on:click="saveTitleOfEvent" class="btn btn-default btn-sm"><span class="glyphicon">&#x2713;</span></button>
+                <button v-on:click="saveTitleOfEvent" class="btn btn-default btn-sm"><i class="custom-icon far fa-check-square"></i></button>
             </h4>
             <vuejs-datepicker style="float:left; margin-right: 10px;" class="responsive-input" v-model="dateOfEvent"></vuejs-datepicker>
             <button v-on:click="saveEvent" class="btn btn-primary btn-sm responsive-button">Datum speichern</button>
@@ -55,7 +55,7 @@
                 <div v-for="voting in votings" :key="voting._id" class="card">
                     <div class="card-header">
                         <a :href="voting.idHash" v-on:click="preselectChoice(voting)" data-toggle="collapse" role="button" aria-expanded="false" aria-controls="collapseExample">{{ voting.title }}</a>
-                        <button v-on:click="editVoting(voting)" class="btn btn-default btn-sm" data-toggle="modal" data-target="#editVotingModal" style="background-color: transparent"><span class="glyphicon">&#x270f;</span></button><br>
+                        <button v-on:click="editVoting(voting)" class="btn btn-default btn-sm" data-toggle="modal" data-target="#editVotingModal" style="background-color: transparent"><i class="far fa-edit"></i></button><br>
                     </div>
                     <div v-if="voting.choices[0]" :id="voting._id" class="collapse" data-parent="#accordion">
                         <label v-if="voting.result">Ergebis mit {{voting.result.quantity}} Stimme(n): "{{voting.result.title}}"</label> 
@@ -85,11 +85,11 @@
                         <div class="modal-body">
                             <div v-for="choice in choices">
                                 {{ choice.title }} 
-                                <button v-on:click="removeVotingItem(choice.title)" class="btn btn-default btn-sm"><span class="glyphicon">&#x2613;</span></button><br>
+                                <button v-on:click="removeVotingItem(choice.title)" class="btn btn-default btn-sm"><i class="fas fa-times"></i></button><br>
                             </div>
                             <br>
                             <input v-model="newVotingItem" style="width: 80%">
-                            <button v-on:click="saveVotingItem" class="btn btn-default btn-sm"><span class="glyphicon">&#x2795;</span></button>
+                            <button v-on:click="saveVotingItem" class="btn btn-default btn-sm"><i class="fas fa-plus"></i></button>
                         
                         </div>
                         <div class="modal-footer">
@@ -313,7 +313,7 @@
             },
             shareEvent: function() {
                 var href = window.location.href.split('events')[0];
-                $('#shareEvent').popover({content: "<div>"+href+'events/join/event/'+eventsView.selectedEvent._id+' <a onclick="eventsView.copyToClipboard(); return false;" href="#"><i class="far fa-copy"></i></span></div>', html: true}).show();
+                $('#shareEvent').popover({content: "<div>"+href+'events/join/event/'+eventsView.selectedEvent._id+' <a onclick="eventsView.copyToClipboard(); return false;" href="#"><i class="far fa-copy"></i></a></div>', html: true}).show();
             },
             copyToClipboard: function () {
                 var href = window.location.href.split('events')[0];
@@ -392,7 +392,11 @@
             saveCheckedChoice: function(selectedVoting) {
                 $.post("/api/saveCheckedChoice", {selectedEvent: eventsView.selectedEvent, selectedVoting: selectedVoting, votingItem: eventsView.checkedChoice}, function(result){
                     notify("SaveCheckedChoice: " + result.message);
-                    notifyGroupAboutNewVoting(eventsView.selectedEvent.title, selectedVoting.title);
+                    if(navbar.selectedGroup != null && navbar.selectedGroup.title != "") {
+                        notifyGroupAboutNewVoting(eventsView.selectedEvent.title, selectedVoting.title, "group");
+                    } else if(navbar.selectedEvent != null && navbar.selectedEvent.title != "") {
+                        notifyGroupAboutNewVoting(eventsView.selectedEvent.title, selectedVoting.title, "event");
+                    }
                     // update voting result:
                     if(result.object != null && result.object != "") { 
                         result.object.events.forEach(event => {
@@ -416,6 +420,9 @@
             eventsView.getEventsOfSelectedGroup();
         } else if(navbar.selectedGroup != null) {
             eventsView.getEventsOfUser();
+        }
+        if(eventsView.selectedEvent != null && eventsView.selectedEvent != '') {
+            eventsView.getVotingsOfSelectedEvent();
         }
     } else {
         $("#includePage").load("pages/home.html");

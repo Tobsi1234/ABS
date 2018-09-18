@@ -3,6 +3,10 @@
     margin-bottom: 4px;
 }
 
+.custom-icon {
+    color: #007bff;
+}
+
 @media (max-width: 404px) {
     .responsive-input {
         width: 100%;

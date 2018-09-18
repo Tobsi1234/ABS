@@ -298,8 +298,8 @@
                 $('#messages').empty();
             }
 
-            function notifyGroupAboutNewVoting(selectedEvent, selectedVoting) {
-                socket.emit('voting', {groupName:navbar.selectedGroup.title, username:navbar.sessionUser, event: selectedEvent, voting: selectedVoting});
+            function notifyGroupAboutNewVoting(selectedEvent, selectedVoting, type) {
+                socket.emit('voting', {groupName:navbar.selectedGroup.title, username:navbar.sessionUser, event: selectedEvent, voting: selectedVoting, type: type});
             }
 
             function notifyUserAboutUserMessage(userId) {

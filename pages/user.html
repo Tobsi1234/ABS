@@ -24,7 +24,7 @@
         </select>
         <div>
         <br>
-        <button v-if="selectedGroup" v-on:click="exitGroup" class="btn btn-primary btn-sm custom-buttons">Aus aktueller Gruppe austreten</button>
+        <button v-if="selectedGroup && selectedGroup.title != ''" v-on:click="exitGroup" class="btn btn-primary btn-sm custom-buttons">Aus aktueller Gruppe '{{selectedGroup.title}}' austreten</button>
         </div>
         <div v-if="messages" id="userMessages">
             <br><br>
