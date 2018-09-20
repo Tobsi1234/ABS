@@ -214,14 +214,12 @@
             function includePage(href) {
                 if(href != undefined && href != '' && href != '#') {
                     if(href.startsWith('events')) {
+                        $("#includePage").load("pages/events.html");
                         var join = href.split('events/')[1];
                         if(join != null && join != '') {
                             $.post("/api/handleJoin", {join: join}, function(result){
                                 notify(result);
-                                $("#includePage").load("pages/events.html");
                             });
-                        } else {
-                            $("#includePage").load("pages/events.html");
                         }
                     } else if(href === 'settings') {
                         $("#includePage").load("pages/settings.html");
