@@ -274,10 +274,10 @@
             openEvent: function (event) {
                 eventsView.selectedEvent = event;
                 eventsView.dateOfEvent = event.date;
-                eventsView.getVotingsOfSelectedEvent();
                 navbar.selectedEvent = eventsView.selectedEvent;
                 $.post("/api/selectEvent", {selectedEvent: eventsView.selectedEvent}, function(){
                     // TODO: if successful:
+                    eventsView.getVotingsOfSelectedEvent();
                     if(eventsView.selectedGroup.title === '') {
                         indexSite.loadMessages();
                         leaveSocket();
