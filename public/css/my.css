@@ -3,8 +3,13 @@
     margin-bottom: 4px;
 }
 
+.icon-button {
+    background-color: transparent;
+}
+
 .custom-icon {
     color: #007bff;
+    background-color: transparent;
 }
 
 @media (max-width: 404px) {
