@@ -1,1 +1,46 @@
-<h1>home</h1>
+<div id="home">
+    <div v-if="sessionUser">
+        <h3 v-if="selectedGroup.title">Aktuelle Gruppe <i>({{ selectedGroup.title }})</i></h3>
+        <div id="activities">
+            <h5 class="display-4">Aktivitäten</h5>
+            <div v-for="activity in activities" v-bind:value="activity">
+                <div v-if="activity.messageType === 'VOTING_NEW'">
+                    Neues Abstimmungsergebnis in <i>{{ activity.eventName }}</i>. 
+                </div>
+            </div>
+
+        </div>
+
+        <div id="tasks">
+            <h5 class="display-4">Aufgaben</h5>
+            
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+    var homeView = new Vue({
+        el: '#home',
+        data: {
+            sessionUser: navbar.sessionUser,
+            selectedGroup: navbar.selectedGroup,
+            selectedEvent: navbar.selectedEvent,
+            activities: "",
+            tasks: ""
+        }, methods: {
+            getActivitiesAndTasksForUser: function() {
+                $.post("/api/getUserMessages", {}, function(result){
+                    homeView.activities = result
+                    // tasks = ...
+                });
+            },
+        }
+    });
+
+    if(navbar.sessionUser != null && navbar.sessionUser != '') {
+        homeView.getActivitiesAndTasksForUser();
+    }
+
+</script>

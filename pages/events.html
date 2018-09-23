@@ -13,13 +13,13 @@
             </div>
             <input v-model="newEventName" class="responsive-input" placeholder="Name des Events eingeben">
             <button v-on:click="addEvent" class="btn btn-outline-primary btn-sm custom-buttons responsive-button">Neues Event erstellen</button><br><br>
-            <h4>Bevorstehende Veranstaltungen</h4>
+            <h4 v-if="futureEvents.length > 0" class="display-4">Bevorstehende Veranstaltungen</h4>
             <ul>
                 <li v-for="event in futureEvents">
                     <a href="" onclick="return false;" v-on:click="openEvent(event)">{{ event.title }} ({{ event.date }})</a>
                 </li>
             </ul>
-            <h4>Vergangene Veranstaltungen</h4>
+            <h4 v-if="previousEvents.length > 0" class="display-4">Vergangene Veranstaltungen</h4>
             <ul>
                 <li v-for="event in previousEvents">
                     <a href="" onclick="return false;" v-on:click="openEvent(event)">{{ event.title }} ({{ event.date }})</a>

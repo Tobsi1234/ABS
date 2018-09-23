@@ -578,7 +578,36 @@ router.post('/saveCheckedChoice', function(req, res) {
                 if(newResult != "") {
                     GroupVotings.findOneAndUpdate({'groupName': req.session.selectedGroup.title}, {$set: {'events.$[i].votings.$[j].result': {"title": newResult,"quantity": highestNumber}} }, {arrayFilters: [{$and: [{'i.title': req.body.selectedEvent.title}, {'i.created': new Date(req.body.selectedEvent.created)}]}, {'j.title': req.body.selectedVoting.title}], "new": true}, function(err, doc) {
                         if(err) return res.send({"object": "", "message": "saveCheckedChoice(): " + err});
-                        res.send({"object": doc, "message": req.body.votingItem + " wurde ausgewählt. Abstimmungsergebnis wurde aktualisiert."});
+                        if(req.body.selectedVoting.result == null || req.body.selectedVoting.result.title != newResult) {
+                            res.send({"object": doc, "message": req.body.votingItem + " wurde ausgewählt. Abstimmungsergebnis wurde aktualisiert."});
+                            if(req.session.selectedGroup == null || req.session.selectedGroup === '') {
+                                User.find({'events.title': req.body.selectedEvent.title}, function(err, docs) {
+                                    if(err) return res.send({"object": "", "message": "saveCheckedChoice(): " + err});
+                                    if(docs != null && docs.length > 0) {
+                                        docs.forEach(userInEvent => {
+                                            User.update({'username': userInEvent.username}, {$push: {'messages': {'messageType': db.MessageType.VOTING_NEW, 'groupName': req.session.selectedGroup.title, 'eventName': req.body.selectedEvent.title, 'content': req.session.username, 'created': new Date()}} }, function(err, count) {
+                                                if (err) return res.send({"object": "", "message": "saveCheckedChoice(): " + err});
+                                                console.log(userInEvent.username + " updated.");
+                                            });
+                                        });
+                                    }
+                                });
+                            } else {
+                                User.find({'groups.title': req.session.selectedGroup.title}, function(err, docs) {
+                                    if(err) return res.send({"object": "", "message": "saveCheckedChoice(): " + err});
+                                    if(docs != null && docs.length > 0) {
+                                        docs.forEach(userInGroup => {
+                                            User.update({'username': userInGroup.username}, {$push: {'messages': {'messageType': db.MessageType.VOTING_NEW, 'groupName': req.session.selectedGroup.title, 'eventName': req.body.selectedEvent.title, 'content': req.session.username, 'created': new Date()}} }, function(err, count) {
+                                                if (err) return res.send({"object": "", "message": "saveCheckedChoice(): " + err});
+                                                console.log(userInGroup.username + " updated.");
+                                            });
+                                        });
+                                    }
+                                });
+                            } 
+                        } else {
+                            res.send({"object": doc, "message": req.body.votingItem + " wurde ausgewählt. Abstimmungsergebnis hat sich nicht geändert."});
+                        }
                     });
                 } else {
                     res.send({"object": "", "message": req.body.votingItem + " wurde ausgewählt. Aber Abstimmungsergebnis konnte nicht ermittelt werden."});
@@ -675,7 +704,7 @@ router.post('/loadMessages', function(req, res) {
 //socket:
 
 router.post('/getUserId', function(req, res) {
-    if(req.session.username != null) {
+    if(checkIfSessionNotNull(req)) {
         User.findOne({username: req.session.username}, function(err, doc) {
             if(err) return res.send("0");
             if(doc != null && doc != "") {
@@ -693,7 +722,7 @@ router.post('/getUserId', function(req, res) {
 // user messages:
 
 router.post('/getUserMessages', function(req, res) {
-    if(req.session.username != null) {
+    if(checkIfSessionNotNull(req)) {
         User.findOne({username: req.session.username}, function(err, doc) {
             if(err) res.send(err.message);
             if(doc != null) {
@@ -707,7 +736,7 @@ router.post('/getUserMessages', function(req, res) {
 });
 
 router.post('/acceptUser', function(req, res) {
-    if(req.session.username != null) {
+    if(checkIfSessionNotNull(req)) {
         User.findOneAndUpdate({'username': req.body.user, 'groups.title': req.body.groupName}, {$set: {'groups.$.status': 1}}, function(err, doc) {
             if (err) return res.send(err.message);
             User.findOneAndUpdate({'username': req.session.username}, {$pull: {'messages': {'_id': req.body.messageId}} },function(err, doc) {
@@ -716,10 +745,10 @@ router.post('/acceptUser', function(req, res) {
             });
         });
     }
-})
+});
 
 router.post('/refuseUser', function(req, res) {
-    if(req.session.username != null) {
+    if(checkIfSessionNotNull(req)) {
         User.findOneAndUpdate({'username': req.body.user}, {$pull: {'groups': {'title': req.body.groupName}}}, function(err, doc) {
             if (err) return res.send(err.message);
             User.findOneAndUpdate({'username': req.session.username}, {$pull: {'messages': {'_id': req.body.messageId}} },function(err, doc) {
@@ -728,7 +757,6 @@ router.post('/refuseUser', function(req, res) {
             });
         });
     }
-})
-
+});
 
 module.exports = router;

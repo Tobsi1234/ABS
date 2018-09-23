@@ -9,7 +9,7 @@ db.once('open', function() {
     console.log("we're connected!");
 });
 
-var MessageType = {"MEMBER_NEW": "MEMBER_NEW"};
+var MessageType = {"MEMBER_NEW": "MEMBER_NEW", "VOTING_NEW": "VOTING_NEW"};
 Object.freeze(MessageType);
 
 var userSchema = mongoose.Schema({
@@ -24,9 +24,10 @@ var userSchema = mongoose.Schema({
         status: Number // 0: Admin, 1: Normal member of event
     }],
     messages: [{
-        messageType: String, // e.g. "MEMBER_NEW"
+        messageType: String, // e.g. "MEMBER_NEW" (group)
         groupName: String,
-        content: String, // e.g. Username
+        eventName: String,
+        content: String, // e.g. Username ("MEMBER_NEW")
         created: Date
     }]
 });
