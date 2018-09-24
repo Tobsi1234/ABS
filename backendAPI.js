@@ -580,7 +580,7 @@ router.post('/saveCheckedChoice', function(req, res) {
                         if(err) return res.send({"object": "", "message": "saveCheckedChoice(): " + err});
                         if(req.body.selectedVoting.result == null || req.body.selectedVoting.result.title != newResult) {
                             res.send({"object": doc, "message": req.body.votingItem + " wurde ausgewählt. Abstimmungsergebnis wurde aktualisiert."});
-                            if(req.session.selectedGroup == null || req.session.selectedGroup === '') {
+                            if(req.session.selectedGroup == null || req.session.selectedGroup.title === '') {
                                 User.find({'events.title': req.body.selectedEvent.title}, function(err, docs) {
                                     if(err) console.log("saveCheckedChoice(): " + err);
                                     if(docs != null && docs.length > 0) {
