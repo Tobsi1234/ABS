@@ -582,26 +582,30 @@ router.post('/saveCheckedChoice', function(req, res) {
                             res.send({"object": doc, "message": req.body.votingItem + " wurde ausgewählt. Abstimmungsergebnis wurde aktualisiert."});
                             if(req.session.selectedGroup == null || req.session.selectedGroup === '') {
                                 User.find({'events.title': req.body.selectedEvent.title}, function(err, docs) {
-                                    if(err) return res.send({"object": "", "message": "saveCheckedChoice(): " + err});
+                                    if(err) console.log("saveCheckedChoice(): " + err);
                                     if(docs != null && docs.length > 0) {
                                         docs.forEach(userInEvent => {
                                             User.update({'username': userInEvent.username}, {$push: {'messages': {'messageType': db.MessageType.VOTING_NEW, 'groupName': req.session.selectedGroup.title, 'eventName': req.body.selectedEvent.title, 'content': req.session.username, 'created': new Date()}} }, function(err, count) {
-                                                if (err) return res.send({"object": "", "message": "saveCheckedChoice(): " + err});
+                                                if (err) console.log("saveCheckedChoice(): " + err);
                                                 console.log(userInEvent.username + " updated.");
                                             });
                                         });
+                                    } else {
+                                        console.log("No users found for event: " + req.body.selectedEvent.title);
                                     }
                                 });
                             } else {
                                 User.find({'groups.title': req.session.selectedGroup.title}, function(err, docs) {
-                                    if(err) return res.send({"object": "", "message": "saveCheckedChoice(): " + err});
+                                    if(err) console.log("saveCheckedChoice(): " + err);
                                     if(docs != null && docs.length > 0) {
                                         docs.forEach(userInGroup => {
                                             User.update({'username': userInGroup.username}, {$push: {'messages': {'messageType': db.MessageType.VOTING_NEW, 'groupName': req.session.selectedGroup.title, 'eventName': req.body.selectedEvent.title, 'content': req.session.username, 'created': new Date()}} }, function(err, count) {
-                                                if (err) return res.send({"object": "", "message": "saveCheckedChoice(): " + err});
+                                                if (err) console.log("saveCheckedChoice(): " + err);
                                                 console.log(userInGroup.username + " updated.");
                                             });
                                         });
+                                    } else {
+                                        console.log("No users found for group: " + req.session.selectedGroup.title);
                                     }
                                 });
                             } 
