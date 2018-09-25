@@ -43,7 +43,9 @@
                     </ul>
                     <ul class="nav navbar-nav ml-auto">
                         <li v-if="sessionUser" class="nav-item v-cloak">
-                            <span class="nav-link active"> {{ sessionUser }} <span class="nav-link" v-if="selectedGroup" style="display: inline;">({{ selectedGroup.title }})</span>
+                            <span class="nav-link active"> {{ sessionUser }} 
+                                <span class="nav-link" v-if="selectedGroup && selectedGroup.title" style="display: inline;">({{ selectedGroup.title }})</span>
+                                <span class="nav-link" v-if="(!selectedGroup || !selectedGroup.title) && selectedEvent && selectedEvent.title" style="display: inline;">({{ selectedEvent.title }})</span>
                                 <button v-on:click="logout" class="btn btn-primary btn-sm">Logout</button> </span> 
                         </li>
                         <!-- <li v-if="!sessionUser" class="nav-item v-cloak" data-toggle="collapse" data-target=".navbar-collapse.show"> -->
@@ -87,6 +89,7 @@
                     sessionUser: '',
                     selectedGroup: '',
                     selectedEvent: '',
+                    jumpToName: '',
                     loginUser: '',
                     password: ''
                 },
@@ -100,8 +103,10 @@
                                 if(result == "OK") {
                                     navbar.sessionUser = loginUser;
                                     indexSite.sessionUser = loginUser;
-                                    // TODO: set /home specific data
                                     window.location = "#"; // redirects user to "home", so we only have to load the /home data
+                                    // set /home specific data
+                                    homeView.sessionUser = loginUser;
+                                    homeView.getActivitiesAndTasksForUser();
                                     //location.reload();
                                     $.post("/api/handleJoin", {join: ""}, function(result){
                                         notify(result);
@@ -117,10 +122,11 @@
                         indexSite.sessionUser = '';
                         navbar.selectedGroup = '';
                         navbar.selectedEvent = null;
-                        // TODO: reset /home specific data
-                        //...
+                        
                         $.post("/api/logout", {}, function(result){
                             window.location = "#"; // redirects user to "home", so we only have to reset the /home data
+                            // reset /home specific data
+                            homeView.resetHomeData();
                         });
                     }
                 }

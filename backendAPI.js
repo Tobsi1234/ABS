@@ -138,7 +138,7 @@ router.post('/enterGroup', function(req, res) {
                         if (err) return res.send(err.message);
                         res.send("Gruppe erfolgreich beigetreten.");
                     });*/
-                    User.update({'username': doc.username}, {$push: {'messages': {'messageType': db.MessageType.MEMBER_NEW, 'groupName': req.body.groupName, 'content': req.session.username, 'created': new Date()}} }, function(err, count) {
+                    User.update({'username': doc.username}, {$push: {'messages': {$each: [{'messageType': db.MessageType.MEMBER_NEW, 'groupName': req.body.groupName, 'content': req.session.username, 'created': new Date()}], $position: 0}} }, function(err, count) {
                         if (err) return res.send(err.message);
                         User.update({username: req.session.username}, {$push: {'groups': {'title': req.body.groupName, 'status': 2}} }, function(err, count) {
                             if (err) return res.send(err.message);
@@ -473,13 +473,15 @@ router.post('/addVoting', function(req, res) {
                 if(eventExists) {
                     GroupVotings.update({groupName: req.session.selectedGroup.title, 'events.title': req.body.selectedEvent.title, 'events.created': req.body.selectedEvent.created}, {$push: {'events.$.votings': {'title': req.body.newVotingName, 'created': new Date()}} }, function(err, doc) {
                         if(err) return res.send("AddVoting(): " + err);
-                        return res.send("Neue Abstimmung wurde zum Event hinzugefügt.");
+                        res.send("Neue Abstimmung wurde zum Event hinzugefügt.");
+                        updateUserMessageOfGroupOrEvent(req.session.username, req.session.selectedGroup, req.body.selectedEvent, req.body.newVotingName, db.MessageType.VOTING_NEW);
                     });
                 } else {
                     // Should not happen, but anyway:
                     GroupVotings.update({groupName: req.session.selectedGroup.title}, {$push: {'events': {'title': req.body.selectedEvent.title, 'created': req.body.selectedEvent.created, 'votings': {'title': req.body.newVotingName, 'created': new Date()}}} }, function(err, doc) { 
                         if(err) return res.send("AddVoting(): " + err);
-                        return res.send("Erste Abstimmung wurde zum bestehenden Event hinzugefügt.");
+                        res.send("Erste Abstimmung wurde zum bestehenden Event hinzugefügt.");
+                        updateUserMessageOfGroupOrEvent(req.session.username, req.session.selectedGroup, req.body.selectedEvent, req.body.newVotingName, db.MessageType.VOTING_NEW);
                     });
                 }
             } else {
@@ -497,6 +499,7 @@ router.post('/addVoting', function(req, res) {
                 newGroupVoting.save(function (err) {
                     if (err) return res.send("AddVoting(): " + err);
                     res.send("Erste Abstimmung wurde dem Event hinzugefügt.");
+                    updateUserMessageOfGroupOrEvent(req.session.username, req.session.selectedGroup, req.body.selectedEvent, req.body.newVotingName, db.MessageType.VOTING_NEW);
                 });
             }
         });
@@ -580,35 +583,7 @@ router.post('/saveCheckedChoice', function(req, res) {
                         if(err) return res.send({"object": "", "message": "saveCheckedChoice(): " + err});
                         if(req.body.selectedVoting.result == null || req.body.selectedVoting.result.title != newResult) {
                             res.send({"object": doc, "message": req.body.votingItem + " wurde ausgewählt. Abstimmungsergebnis wurde aktualisiert."});
-                            if(req.session.selectedGroup == null || req.session.selectedGroup.title === '') {
-                                User.find({'events.title': req.body.selectedEvent.title}, function(err, docs) {
-                                    if(err) console.log("saveCheckedChoice(): " + err);
-                                    if(docs != null && docs.length > 0) {
-                                        docs.forEach(userInEvent => {
-                                            User.update({'username': userInEvent.username}, {$push: {'messages': {'messageType': db.MessageType.VOTING_NEW, 'groupName': req.session.selectedGroup.title, 'eventName': req.body.selectedEvent.title, 'content': req.session.username, 'created': new Date()}} }, function(err, count) {
-                                                if (err) console.log("saveCheckedChoice(): " + err);
-                                                console.log(userInEvent.username + " updated.");
-                                            });
-                                        });
-                                    } else {
-                                        console.log("No users found for event: " + req.body.selectedEvent.title);
-                                    }
-                                });
-                            } else {
-                                User.find({'groups.title': req.session.selectedGroup.title}, function(err, docs) {
-                                    if(err) console.log("saveCheckedChoice(): " + err);
-                                    if(docs != null && docs.length > 0) {
-                                        docs.forEach(userInGroup => {
-                                            User.update({'username': userInGroup.username}, {$push: {'messages': {'messageType': db.MessageType.VOTING_NEW, 'groupName': req.session.selectedGroup.title, 'eventName': req.body.selectedEvent.title, 'content': req.session.username, 'created': new Date()}} }, function(err, count) {
-                                                if (err) console.log("saveCheckedChoice(): " + err);
-                                                console.log(userInGroup.username + " updated.");
-                                            });
-                                        });
-                                    } else {
-                                        console.log("No users found for group: " + req.session.selectedGroup.title);
-                                    }
-                                });
-                            } 
+                            updateUserMessageOfGroupOrEvent(req.session.username, req.session.selectedGroup, req.body.selectedEvent, req.body.selectedVoting.title, db.MessageType.VOTING_UPDATE);
                         } else {
                             res.send({"object": doc, "message": req.body.votingItem + " wurde ausgewählt. Abstimmungsergebnis hat sich nicht geändert."});
                         }
@@ -623,6 +598,42 @@ router.post('/saveCheckedChoice', function(req, res) {
     }
 });
 
+function updateUserMessageOfGroupOrEvent(username, selectedGroup, selectedEvent, votingName, messageType) {
+    if(selectedGroup == null || selectedGroup.title === '') {
+        User.find({'events.title': selectedEvent.title}, function(err, docs) {
+            if(err) console.log("saveCheckedChoice(): " + err);
+            if(docs != null && docs.length > 0) {
+                docs.forEach(userInEvent => {
+                    if(userInEvent.username != username) {
+                        updateUserMessage(userInEvent.username, messageType, selectedGroup.title, selectedEvent.title, votingName, username);
+                    }
+                });
+            } else {
+                console.log("No users found for event: " + selectedEvent.title);
+            }
+        });
+    } else {
+        User.find({'groups.title': selectedGroup.title}, function(err, docs) {
+            if(err) console.log("saveCheckedChoice(): " + err);
+            if(docs != null && docs.length > 0) {
+                docs.forEach(userInGroup => {
+                    if(userInEvent.username != username) {
+                        updateUserMessage(userInGroup.username, messageType, selectedGroup.title, selectedEvent.title, votingName, username);
+                    }
+                });
+            } else {
+                console.log("No users found for group: " + selectedGroup.title);
+            }
+        });
+    } 
+}
+
+function updateUserMessage(username, messageType, groupName, eventName, votingName, content) {
+    User.update({'username': username}, {$push: {'messages': {$each: [{'messageType': messageType, 'groupName': groupName, 'eventName': eventName, 'votingName': votingName, 'content': content, 'created': new Date()}], $position: 0}} }, function(err) {
+        if (err) console.log("updateUserMessage: " + err);
+        console.log(username + " updated.");
+    });
+}
 
 // chat:
 

@@ -172,8 +172,6 @@
                         leaveSocket();
                     }
                 });
-                
-                
             },
             addEvent: function() {
                 if(eventsView.newEventName.trim() != "") {
@@ -235,6 +233,9 @@
                         });
                         eventsView.futureEvents = futureEvents;
                         eventsView.previousEvents = previousEvents;
+                        if(navbar.jumpToName != '') {
+                            eventsView.jumpToEvent();
+                        }
                     } else {
                         eventsView.futureEvents = "";
                         eventsView.previousEvents = "";
@@ -265,6 +266,9 @@
                         });
                         eventsView.futureEvents = futureEvents;
                         eventsView.previousEvents = previousEvents;
+                        if(navbar.jumpToName != '') {
+                            eventsView.jumpToEvent();
+                        }
                     } else {
                         eventsView.futureEvents = "";
                         eventsView.previousEvents = "";
@@ -374,7 +378,6 @@
                 }
             },
             removeVotingItem: function(votingItem) {
-                console.log(votingItem);
                 $.post("/api/removeVotingItem", {selectedEvent: eventsView.selectedEvent, selectedVoting: eventsView.selectedVoting, votingItem: votingItem}, function(result){
                     notify("RemoveVotingItem: " + result);
                     eventsView.getVotingsOfSelectedEvent();
@@ -410,6 +413,25 @@
                         });
                     }                    
                 });
+            },
+            jumpToEvent: function() {
+                console.log(navbar.jumpToName);
+                eventsView.selectedEvent = "";
+                navbar.selectedEvent = "";   
+                eventsView.futureEvents.forEach(futureEvent => {
+                    console.log(futureEvent.title);
+                    if(futureEvent.title === navbar.jumpToName) {
+                        eventsView.openEvent(futureEvent);
+                    }
+                });
+                if(eventsView.selectedEvent == "") {
+                    eventsView.previousEvents.forEach(previousEvent => {
+                        if(previousEvent.title === navbar.jumpToName) {
+                            eventsView.openEvent(previousEvent);
+                        }
+                    });
+                }
+                navbar.jumpToName = '';
             }
         }
     });

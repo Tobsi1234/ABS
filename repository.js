@@ -1,7 +1,7 @@
 
 var mongoose = require('mongoose');
 mongoose.connect(process.env.MONGODB_URI);
-//local: 'mongodb://localhost/test2'
+//local: 'mongodb://localhost/test2' bzw. MONGODB_URI=mongodb://localhost/test2 node index.js
 
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
@@ -9,7 +9,7 @@ db.once('open', function() {
     console.log("we're connected!");
 });
 
-var MessageType = {"MEMBER_NEW": "MEMBER_NEW", "VOTING_NEW": "VOTING_NEW"};
+var MessageType = {"MEMBER_NEW": "MEMBER_NEW", "VOTING_UPDATE": "VOTING_UPDATE", "VOTING_NEW": "VOTING_NEW"};
 Object.freeze(MessageType);
 
 var userSchema = mongoose.Schema({
@@ -27,6 +27,7 @@ var userSchema = mongoose.Schema({
         messageType: String, // e.g. "MEMBER_NEW" (group)
         groupName: String,
         eventName: String,
+        votingName: String,
         content: String, // e.g. Username ("MEMBER_NEW")
         created: Date
     }]
