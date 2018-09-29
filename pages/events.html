@@ -154,6 +154,22 @@
                 $.post("/api/getGroupsOfUser", {}, function(result){
                     eventsView.groups = [{title: "", status: 0}];
                     eventsView.groups.push.apply(eventsView.groups, result);
+                    if(navbar.jumpToGroup != null) {
+                        navbar.selectedGroup = "";
+                        eventsView.selectedGroup = "";
+                        var newGroup = null;
+                        eventsView.groups.forEach(group => {
+                            if(group.title === navbar.jumpToGroup) {
+                                newGroup = group;
+                            }
+                        });
+                        if(newGroup != null) {
+                            navbar.selectedGroup = newGroup;
+                            eventsView.selectedGroup = newGroup;
+                            eventsView.selectGroup();
+                        }
+                        navbar.jumpToGroup = null;
+                    }
                 });
             },
             selectGroup: function() {
@@ -233,7 +249,7 @@
                         });
                         eventsView.futureEvents = futureEvents;
                         eventsView.previousEvents = previousEvents;
-                        if(navbar.jumpToName != '') {
+                        if(navbar.jumpToName != null && navbar.jumpToName != '') {
                             eventsView.jumpToEvent();
                         }
                     } else {
@@ -266,7 +282,7 @@
                         });
                         eventsView.futureEvents = futureEvents;
                         eventsView.previousEvents = previousEvents;
-                        if(navbar.jumpToName != '') {
+                        if(navbar.jumpToName != null && navbar.jumpToName != '') {
                             eventsView.jumpToEvent();
                         }
                     } else {
@@ -415,11 +431,9 @@
                 });
             },
             jumpToEvent: function() {
-                console.log(navbar.jumpToName);
                 eventsView.selectedEvent = "";
                 navbar.selectedEvent = "";   
                 eventsView.futureEvents.forEach(futureEvent => {
-                    console.log(futureEvent.title);
                     if(futureEvent.title === navbar.jumpToName) {
                         eventsView.openEvent(futureEvent);
                     }
@@ -431,20 +445,22 @@
                         }
                     });
                 }
-                navbar.jumpToName = '';
+                navbar.jumpToName = null;
             }
         }
     });
 
     if(navbar.sessionUser != null && navbar.sessionUser != '') {
         eventsView.getGroupsOfSessionUser();
-        if(navbar.selectedGroup != null && navbar.selectedGroup.title != "") {
-            eventsView.getEventsOfSelectedGroup();
-        } else if(navbar.selectedGroup != null) {
-            eventsView.getEventsOfUser();
-        }
-        if(eventsView.selectedEvent != null && eventsView.selectedEvent != '') {
-            eventsView.getVotingsOfSelectedEvent();
+        if(navbar.jumpToGroup == null) {
+            if(navbar.selectedGroup != null && navbar.selectedGroup.title != "") {
+                eventsView.getEventsOfSelectedGroup();
+            } else if(navbar.selectedGroup != null) {
+                eventsView.getEventsOfUser();
+            }
+            if(eventsView.selectedEvent != null && eventsView.selectedEvent != '' && (navbar.jumpToName == null || navbar.jumpToName == '')) {
+                eventsView.getVotingsOfSelectedEvent();
+            }
         }
     } else {
         $("#includePage").load("pages/home.html");

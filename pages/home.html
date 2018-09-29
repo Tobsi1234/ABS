@@ -5,10 +5,10 @@
             <h5 class="display-4">Aktivitäten</h5>
             <div v-for="activity in activities" v-bind:value="activity">
                 <div v-if="activity.messageType === 'VOTING_UPDATE'">
-                    Neues Abstimmungsergebnis in <i>{{ activity.eventName }}</i> durch <i>{{ activity.content }}</i>. 
+                    Neues Abstimmungsergebnis in <a href="#events" v-on:click="jumpToEvent(activity); return false;"><i>{{ activity.eventName }}</i></a> durch <i>{{ activity.content }}</i>. 
                 </div>
                 <div v-if="activity.messageType === 'VOTING_NEW'">
-                    <i>{{ activity.content }}</i> hat eine neue Abstimmung <i>{{ activity.votingName }} </i> in <a href="#events" v-on:click="jumpToEvent(activity.eventName); return false;"><i>{{ activity.eventName }}</i></a> hinzugefügt. 
+                    <i>{{ activity.content }}</i> hat eine neue Abstimmung <i>{{ activity.votingName }} </i> in <a href="#events" v-on:click="jumpToEvent(activity); return false;"><i>{{ activity.eventName }}</i></a> in <i>{{ activity.groupName }}</i> hinzugefügt. 
                 </div>
             </div>
             <br>
@@ -42,9 +42,13 @@
                 homeView.sessionUser = "";
                 homeView.activities = "";
                 homeView.tasks = "";
-            }, jumpToEvent: function(eventName) {
-                console.log(eventName);
-                navbar.jumpToName = eventName;
+            }, jumpToEvent: function(activity) {
+                navbar.jumpToName = activity.eventName;
+                if(activity.groupName == null) {
+                    navbar.jumpToGroup = '';
+                } else {
+                    navbar.jumpToGroup = activity.groupName;
+                }
                 navbar.selectedEvent = "";
                 $("#includePage").load("pages/events.html");
             }
