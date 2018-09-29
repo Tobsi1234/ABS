@@ -59,17 +59,24 @@ router.post('/session', function(req, res) {
 //Create new user
 router.post('/user', function(req, res) {
     var newUser = new User({
+        email: req.body.email,
         username: req.body.username,
         password: passwordHash.generate(req.body.password)
     });
 
     User.find({username: newUser.username}, function(err, docs) {
         if(docs == "") {
-            newUser.save(function (err, newUser) {
-                if (err) return console.error(err);
-                console.log("saved: " + newUser.username);
+            User.find({email: newUser.email}, function(err, docs) {
+                if(docs == "") {
+                    newUser.save(function (err, newUser) {
+                        if (err) return console.error(err);
+                        console.log("saved: " + newUser.username);
+                        res.send(newUser.username);
+                    });
+                } else {
+                    res.send("Email bereits vorhanden.");
+                }
             });
-            res.send(newUser.username);
         } else {
             res.send("Username bereits vorhanden.");
         }

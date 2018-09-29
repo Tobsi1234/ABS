@@ -2,8 +2,9 @@
     <br>
     <div v-if="!sessionUser">
         <form>
-            <input v-model="newUser" placeholder="Enter new username">
-            <input v-model="newPassword" placeholder="Enter new password">
+            <input id="email" type="email" v-model="newEmail" placeholder="E-Mail Adresse eingeben" class="responsive-input"><br>
+            <input v-model="newUser" placeholder="Username eingeben" class="responsive-input"><br>
+            <input v-model="newPassword" placeholder="Passwort eingeben" class="responsive-input"><br>
             <button v-on:click="registerUser" class="btn btn-primary btn-sm custom-buttons">Registrieren</button>
         </form>
     </div>
@@ -33,7 +34,7 @@
                     {{ message.content }} möchte der Gruppe {{ message.groupName}} beitreten. 
                     <button v-on:click="acceptUser(message)" class="btn btn-outline-primary btn-sm custom-buttons"><span class="glyphicon">&#x2713;</span></button>
                     <button v-on:click="refuseUser(message)" class="btn btn-outline-primary btn-sm custom-buttons"><span class="glyphicon">&#x2613;</span></button>
-                </div>   
+                </div>
             </div>
         </div>
         <br><br>
@@ -49,6 +50,7 @@
             sessionUser: navbar.sessionUser,
             newUser: '',
             newPassword: '',
+            newEmail,
             newGroup: '',
             groupName: '',
             newGroupName: '',
@@ -58,12 +60,13 @@
         },
         methods: {
             registerUser: function () {
-                var newUser = userView.newUser;
-                var newPassword = userView.newPassword;
+                var newEmail = userView.newEmail.trim();
+                var newUser = userView.newUser.trim();
+                var newPassword = userView.newPassword.trim();
 
-                if(newUser != '' && newPassword != '') {
+                if(newEmail != '' && newUser != '' && newPassword != '' && document.getElementById("email").checkValidity()) {
                     console.log(newUser);
-                    $.post("/api/user", {username: newUser, password: newPassword}, function(result){
+                    $.post("/api/user", {email: newEmail, username: newUser, password: newPassword}, function(result){
                         notify("saved: " + result);
                     });
                 }
