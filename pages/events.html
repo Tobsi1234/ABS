@@ -31,7 +31,7 @@
             <h3 v-if="!editMode" style="text-align: center">
                 {{ selectedEvent.title }}
                 <button v-on:click="editTitleOfEvent" class="icon-button btn btn-default btn-sm"><i class="custom-icon far fa-edit"></i></button>
-                <button id="shareEvent" v-on:click="shareEvent"  style="margin-left: -8px;" class="icon-button btn btn-default btn-sm" data-container="body" data-toggle="popover" data-placement="bottom"><i class="custom-icon fas fa-share-square"></i></button>
+                <button v-if="!selectedGroup.title" id="shareEvent" v-on:click="shareEvent"  style="margin-left: -8px;" class="icon-button btn btn-default btn-sm" data-container="body" data-toggle="popover" data-placement="bottom"><i class="custom-icon fas fa-share-square"></i></button>
             </h3>
             <h4 v-if="editMode" style="text-align: center">
                 <input v-model="newTitle" size="12">

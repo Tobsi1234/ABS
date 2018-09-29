@@ -21,6 +21,11 @@ app.use(express.static('public'));
 //for /api use backendAPI router
 app.use('/api', router);
 
+process.on('uncaughtException', function() {
+    console.log("Error: ");
+    console.log(arguments);
+});
+
 io.on('connection', function(socket){
     console.log('a user connected');
     socket.on('disconnect', function(){
