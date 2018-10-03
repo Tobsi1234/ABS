@@ -50,11 +50,9 @@
                         </li>
                         <!-- <li v-if="!sessionUser" class="nav-item v-cloak" data-toggle="collapse" data-target=".navbar-collapse.show"> -->
                         <li v-if="!sessionUser" class="nav-item v-cloak">
-                            <form style="display: inline;">
-                                <input id="username" type="text" v-model="loginUser" autocomplete="username" placeholder="Enter your username">
-                                <input id="password" type="password" v-model="password" autocomplete="current-password" placeholder="Enter your password">
-                                <button v-on:click="login" class="btn btn-primary btn-sm custom-buttons">Login</button>
-                            </form>
+                            <input id="username" type="text" v-model="loginUser" v-on:keyup.enter="login" autocomplete="username" placeholder="Enter your username">
+                            <input id="password" type="password" v-model="password" v-on:keyup.enter="login" autocomplete="current-password" placeholder="Enter your password">
+                            <button id="loginButton" v-on:click="login" class="btn btn-primary btn-sm custom-buttons">Login</button>
                             <a href="#user" onclick="return follow(this);">Registrieren</a>
                         </li>
                     </ul>
@@ -70,10 +68,8 @@
                     </div>
                     <hr>
                     <div id="inputDiv">
-                        <form>
-                            <input id="m" autocomplete="off" style="width: calc(100% - 75px)"/>
-                            <button type="submit" v-on:click="sendMessage()" class="btn btn-outline-primary btn-sm" style="float:right;">Senden</button>
-                        </form>
+                        <input id="m" v-on:keyup.enter="sendMessage" autocomplete="off" style="width: calc(100% - 75px)"/>
+                        <button id="sendButton" type="submit" v-on:click="sendMessage" class="btn btn-outline-primary btn-sm" style="float:right;">Senden</button>
                     </div>
                 </div>
             </div>      
@@ -103,7 +99,9 @@
                             $.post("/api/login", {username: loginUser, password: password}, function(result){
                                 if(result == "OK") {
                                     navbar.sessionUser = loginUser;
+                                    navbar.selectedGroup = {title: "", status: 0};
                                     indexSite.sessionUser = loginUser;
+                                    indexSite.selectedGroup = {title: "", status: 0};
                                     window.location = "#"; // redirects user to "home", so we only have to load the /home data
                                     // set /home specific data
                                     homeView.sessionUser = loginUser;
@@ -127,7 +125,10 @@
                         $.post("/api/logout", {}, function(result){
                             window.location = "#"; // redirects user to "home", so we only have to reset the /home data
                             // reset /home specific data
-                            homeView.resetHomeData();
+                            // TODO: The following is not working...
+                            if(homeView != undefined) {
+                                homeView.resetHomeData();
+                            }
                         });
                     }
                 }
@@ -230,8 +231,14 @@
                         }
                     } else if(href === 'settings') {
                         $("#includePage").load("pages/settings.html");
-                    } else if(href === 'user') {
+                    } else if(href.startsWith('user')) {
                         $("#includePage").load("pages/user.html");
+                        var activate = href.split('user/')[1];
+                        if(activate != null && activate != '') {
+                            $.post("/api/handleActivate", {activate: activate}, function(result){
+                                notify(result);
+                            });
+                        }
                     } else {
                         $("#includePage").load("pages/home.html");
                         href = "home";
@@ -263,11 +270,15 @@
                 }
             }
 
-            $('#messagesDiv').scroll(function(){
-                scrolled=true;
-                console.log(scrolled);
-            });
             
+
+            window.onload=function(){
+                // login: 
+                $('#messagesDiv').scroll(function(){
+                    scrolled=true;
+                    console.log(scrolled);
+                });
+            }
         </script>
 
         <script>

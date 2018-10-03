@@ -1,12 +1,10 @@
 <div id="user">
     <br>
     <div v-if="!sessionUser">
-        <form>
-            <input id="email" type="email" v-model="newEmail" placeholder="E-Mail Adresse eingeben" class="responsive-input"><br>
-            <input v-model="newUser" placeholder="Username eingeben" class="responsive-input"><br>
-            <input v-model="newPassword" placeholder="Passwort eingeben" class="responsive-input"><br>
-            <button v-on:click="registerUser" class="btn btn-primary btn-sm custom-buttons">Registrieren</button>
-        </form>
+        <input id="email" type="email" v-model="newEmail" placeholder="E-Mail Adresse eingeben" class="responsive-input"><br>
+        <input v-model="newUser" placeholder="Username eingeben" class="responsive-input"><br>
+        <input v-model="newPassword" placeholder="Passwort eingeben" class="responsive-input"><br>
+        <button v-on:click="registerUser" class="btn btn-primary btn-sm custom-buttons">Registrieren</button>
     </div>
     <div v-if="sessionUser">
         <h2>Eingeloggt als <i> {{ sessionUser }} </i> </h2> 
@@ -63,11 +61,12 @@
                 var newEmail = userView.newEmail.trim();
                 var newUser = userView.newUser.trim();
                 var newPassword = userView.newPassword.trim();
+                var url = location.protocol+'//'+location.hostname+(location.port ? ':'+location.port: '');
 
                 if(newEmail != '' && newUser != '' && newPassword != '' && document.getElementById("email").checkValidity()) {
                     console.log(newUser);
-                    $.post("/api/user", {email: newEmail, username: newUser, password: newPassword}, function(result){
-                        notify("saved: " + result);
+                    $.post("/api/user", {email: newEmail, username: newUser, password: newPassword, url: url}, function(result){
+                        notify(result);
                     });
                 }
             },

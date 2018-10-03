@@ -16,6 +16,7 @@ var userSchema = mongoose.Schema({
     username: String,
     password: String,
     email: String,
+    status: Number, // 0/NULL: Normal user, 1: Unactivated user
     groups: [{
         title: String, 
         status: Number // 0: Admin, 1: Normal member of group, 2: Requested to be member of group

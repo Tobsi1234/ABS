@@ -3,11 +3,27 @@ var passwordHash = require('password-hash');
 
 var router = express.Router();
 
+var mongoose = require('mongoose');
 var db = require('./repository.js');
 var User = db.User;
 var GroupEvents = db.GroupEvents;
 var GroupVotings = db.GroupVotings;
 var Chat = db.Chat;
+
+var nodemailer = require('nodemailer');
+
+var transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'tobias.steinbrueck@gmail.com',
+    pass: process.env.EMAIL_PASSWORD
+  }
+});
+
+var mailOptions = {
+  from: 'ABS <abs@gmail.com>',
+  subject: 'Willkommen bei ABS',
+}; //"to:" and "html:" is set in the register method
 
 function checkIfSessionNotNull(req) {
     if(req.session.username != null && req.session.username != '') {
@@ -61,20 +77,30 @@ router.post('/user', function(req, res) {
     var newUser = new User({
         email: req.body.email,
         username: req.body.username,
-        password: passwordHash.generate(req.body.password)
+        password: passwordHash.generate(req.body.password),
+        status: 1
     });
 
     User.find({username: newUser.username}, function(err, docs) {
         if(docs == "") {
             User.find({email: newUser.email}, function(err, docs) {
                 if(docs == "") {
+                    mailOptions.to = newUser.email;
                     newUser.save(function (err, newUser) {
                         if (err) return console.error(err);
-                        console.log("saved: " + newUser.username);
-                        res.send(newUser.username);
+                        console.log("saved: " + newUser._id);
+                        res.send("E-Mail mit Registrierungslink wurde verschickt an: " + newUser.email);
+                        mailOptions.html = "<h2>Herzlich Willkommen " + newUser.username + "</h2><br><br>"+ "Klicke Link: " + req.body.url + "#user/activate/" + newUser._id;
+                        transporter.sendMail(mailOptions, function(error, info){
+                            if (error) {
+                            console.log(error);
+                            } else {
+                            console.log('Email sent to ' + newUser.email + ': ' + info.response);
+                            }
+                        });
                     });
                 } else {
-                    res.send("Email bereits vorhanden.");
+                    res.send("E-Mail Adresse bereits vorhanden.");
                 }
             });
         } else {
@@ -90,13 +116,18 @@ router.post('/login', function(req, res) {
         if(docs == "") {
             res.send("Username nicht vorhanden.");
         } else {
-            if(docs[0].password != null && passwordHash.verify(req.body.password, docs[0].password)) {
-                req.session.username = docs[0].username;
-                req.session.selectedGroup = {title: "", status: 0};
-                res.sendStatus(200);
-            } else {
-                res.send("Passwort falsch.");
+            if(docs[0].status == null || docs[0].status == 0) {
+                if(docs[0].password != null && passwordHash.verify(req.body.password, docs[0].password)) {
+                    req.session.username = docs[0].username;
+                    req.session.selectedGroup = {title: "", status: 0};
+                    res.sendStatus(200);
+                } else {
+                    res.send("Passwort falsch.");
+                }
+            } else {
+                res.send("User ist noch nicht aktiviert.");
             }
+            
         }
     });
 });
@@ -403,38 +434,42 @@ router.post('/handleJoin', function(req, res) {
                 joinId = joinId.split('/')[0];
             }
             if(joinId != '') {
-                GroupEvents.find({groupName:''},{details: {$elemMatch: {_id: joinId}}}, function(err, doc) {
-                    if(err) return res.send("handleJoin(): " + err);
-                    if(doc != null) {
-                        var eventTitle = doc[0].details[0].title;
-                        User.findOne({username:req.session.username}, function(err, user) {
-                            if(err) return res.send("handleJoin(): " + err);
-                            if(user.events != null) {
-                                var isIn = false;
-                                user.events.forEach(event => {
-                                    if(event.title === eventTitle) {
-                                        isIn = true;
+                if(mongoose.Types.ObjectId.isValid(joinId)) {
+                    GroupEvents.find({groupName:''},{details: {$elemMatch: {_id: joinId}}}, function(err, doc) {
+                        if(err) return res.send("handleJoin(): " + err);
+                        if(doc != null && doc[0].details[0] != null) {
+                            var eventTitle = doc[0].details[0].title;
+                            User.findOne({username:req.session.username}, function(err, user) {
+                                if(err) return res.send("handleJoin(): " + err);
+                                if(user.events != null) {
+                                    var isIn = false;
+                                    user.events.forEach(event => {
+                                        if(event.title === eventTitle) {
+                                            isIn = true;
+                                        }
+                                    });
+                                    if(isIn) {
+                                        res.send("Du bist bereits in dem Event '" + eventTitle + "'");
+                                    } else {
+                                        User.update({username:req.session.username}, {$push: {events: {title: eventTitle, status: 1}} }, function(err) {
+                                            if(err) return res.send("handleJoin(): " + err);
+                                            res.send("Dem Event '" + eventTitle + "' wurde beigetreten.");
+                                        });
                                     }
-                                });
-                                if(isIn) {
-                                    res.send("Du bist bereits in dem Event '" + eventTitle + "'");
                                 } else {
                                     User.update({username:req.session.username}, {$push: {events: {title: eventTitle, status: 1}} }, function(err) {
                                         if(err) return res.send("handleJoin(): " + err);
                                         res.send("Dem Event '" + eventTitle + "' wurde beigetreten.");
-                                    });
+                                    });     
                                 }
-                            } else {
-                                User.update({username:req.session.username}, {$push: {events: {title: eventTitle, status: 1}} }, function(err) {
-                                    if(err) return res.send("handleJoin(): " + err);
-                                    res.send("Dem Event '" + eventTitle + "' wurde beigetreten.");
-                                });     
-                            }
-                        });
-                    } else {
-                        res.send(joinId + " ist nicht vorhanden.");
-                    }
-                });
+                            });
+                        } else {
+                            res.send(joinId + " ist nicht vorhanden.");
+                        }
+                    });
+                } else {
+                    res.send(joinId + " ist keine valide Id.");
+                }  
             } else {
                 res.send(joinId + " ist nicht vorhanden.");
             }    
@@ -449,6 +484,41 @@ router.post('/handleJoin', function(req, res) {
     }
 });
 
+router.post('/handleActivate', function(req, res) {
+    var activate = req.body.activate;
+    if(activate.includes('activate/')) {
+        var activateId = activate.split('activate/')[1];
+        if(activateId != '') {
+            if(activateId.includes('/')) {
+                activateId = activateId.split('/')[0];
+            }
+            if(activateId != '') {
+                if(mongoose.Types.ObjectId.isValid(activateId)) {
+                    User.findOneAndUpdate({_id: activateId}, {$set:{status:0}}, {new: true}, function(err, doc){
+                        if(err) return res.send("handleActivate(): " + err);
+                        if(doc != null) {
+                            res.send("Der User " + doc.username + " ist nun aktiviert.");
+                        } else {
+                            res.send(activateId + " wurde nicht gefunden");
+                        }
+                    });
+                } else {
+                    res.send(activateId + " ist keine valide Id.");
+                }  
+            } else {
+                res.send(activate + " entspricht keinem validen URL-Format.");
+            }
+        } else {
+            res.send(activate + " entspricht keinem validen URL-Format.");
+        }
+    } else {
+        if(activate == '') {
+            return res.send("");
+        } else {
+            return res.send(activate + " entspricht keinem validen URL-Format.");
+        }
+    }
+});
 
 // voting:
 
