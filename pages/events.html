@@ -40,6 +40,9 @@
             <vuejs-datepicker style="float:left; margin-right: 10px;" class="responsive-input" v-model="dateOfEvent"></vuejs-datepicker>
             <button v-on:click="saveEvent" class="btn btn-primary btn-sm responsive-button">Datum speichern</button>
             <br><br>
+            <textarea v-model="newPosting" class="form-control" rows="3" placeholder="Poste etwas in dieses Event"></textarea>
+            <button v-on:click="addPosting" style="margin-top: 10px;" class="btn btn-primary btn-sm responsive-button">Posten</button>
+            <br><br>
 
             <!-- <ul style="margin: 0; padding: 0;">
                 <!-<li v-for="voting in votings">
@@ -51,19 +54,28 @@
 
             <!-- The use of an accordion in the following lines is important to have unique IDs (title of choice is only unique in one voting) 
                 and to make sure {{checkedChoice}} has the value of the correct voting -->
+
+            <div v-for="voting in votings" :key="voting._id">
+                <div v-if="voting.votingType == 2">
+                    <p class="posting">{{ voting.title }}</p>
+                </div>
+            </div>
+            <br>
             <div id="accordion">
                 <div v-for="voting in votings" :key="voting._id" class="card">
-                    <div class="card-header">
-                        <a :href="voting.idHash" v-on:click="preselectChoice(voting)" data-toggle="collapse" role="button" aria-expanded="false" aria-controls="collapseExample">{{ voting.title }}</a>
-                        <button v-on:click="editVoting(voting)" class="icon-button btn btn-default btn-sm" data-toggle="modal" data-target="#editVotingModal"><i class="far fa-edit"></i></button><br>
-                    </div>
-                    <div v-if="voting.choices[0]" :id="voting._id" class="collapse" data-parent="#accordion">
-                        <label v-if="voting.result">Ergebis mit {{voting.result.quantity}} Stimme(n): "{{voting.result.title}}"</label> 
-                        <div v-for="choice in voting.choices" :key="choice.title">
-                            <input type="radio" :id="choice.title" :value="choice.title" v-model="checkedChoice">
-                            <label :for="choice.title">{{ choice.title }}</label>
+                    <div v-if="voting.votingType != 2">
+                        <div class="card-header">
+                            <a :href="voting.idHash" v-on:click="preselectChoice(voting)" data-toggle="collapse" role="button" aria-expanded="false" aria-controls="collapseExample">{{ voting.title }} <p style="display: inline" v-if="voting.result">--> <i>{{voting.result.title}}</i></p></a>
+                            <button v-on:click="editVoting(voting)" class="icon-button btn btn-default btn-sm" data-toggle="modal" data-target="#editVotingModal"><i class="far fa-edit"></i></button><br>
                         </div>
-                        <button v-on:click="saveCheckedChoice(voting)" class="btn btn-primary btn-sm">Speichern</button>
+                        <div v-if="voting.choices[0]" :id="voting._id" class="collapse" data-parent="#accordion">
+                            <label v-if="voting.result">Ergebis mit {{voting.result.quantity}} Stimme(n): "{{voting.result.title}}"</label> 
+                            <div v-for="choice in voting.choices" :key="choice.title">
+                                <input type="radio" :id="choice.title" :value="choice.title" v-model="checkedChoice">
+                                <label :for="choice.title">{{ choice.title }}</label>
+                            </div>
+                            <button v-on:click="saveCheckedChoice(voting)" class="btn btn-primary btn-sm">Speichern</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -139,6 +151,7 @@
             dateOfEvent: '',
             editMode: false,
             newTitle: '',
+            newPosting: '',
             newVotingName: '',
             votings: [],
             selectedVoting: "",
@@ -345,13 +358,21 @@
                 $temp.remove();
             },
             // Votings:
+            addPosting: function() {
+                if(eventsView.newPosting.trim() != "") {
+                    $.post("/api/addVoting", {selectedEvent: eventsView.selectedEvent, newVotingName: eventsView.newPosting.trim(), votingType: 2}, function(result){
+                        notify("AddVoting: " + result);
+                        eventsView.getVotingsOfSelectedEvent();
+                    });
+                }
+            },
             editVoting: function(voting) {
                 eventsView.selectedVoting = voting; 
                 eventsView.choices = voting.choices;
             },
             addVoting: function() {
                 if(eventsView.newVotingName.trim() != "") {
-                    $.post("/api/addVoting", {selectedEvent: eventsView.selectedEvent, newVotingName: eventsView.newVotingName.trim()}, function(result){
+                    $.post("/api/addVoting", {selectedEvent: eventsView.selectedEvent, newVotingName: eventsView.newVotingName.trim(), votingType: 0}, function(result){
                         notify("AddVoting: " + result);
                         eventsView.getVotingsOfSelectedEvent();
                     });

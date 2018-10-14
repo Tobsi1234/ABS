@@ -16,6 +16,16 @@
     font-size: 2.5rem !important;
 }
 
+.posting {
+    white-space: pre-wrap; 
+    border: 1px solid #007bff;
+    max-height: 100px;
+    padding: 5px;
+    margin: 10px;
+    border-radius: 5px;
+    overflow: scroll;
+}
+
 @media (max-width: 404px) {
     .responsive-input {
         width: 100%;

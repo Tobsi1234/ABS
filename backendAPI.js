@@ -534,7 +534,7 @@ router.post('/addVoting', function(req, res) {
                     doc.events.forEach(element => {
                         if(element.title == req.body.selectedEvent.title && new Date(element.created).getTime() == new Date(req.body.selectedEvent.created).getTime()) {
                             eventExists = true;
-                            if(element.votings != null) {
+                            if(element.votings != null && req.body.votingType != 2) {
                                 element.votings.forEach(element => {
                                     if(element.title == req.body.newVotingName) {
                                         titleExists = true;
@@ -548,16 +548,16 @@ router.post('/addVoting', function(req, res) {
                     }
                 }
                 if(eventExists) {
-                    GroupVotings.update({groupName: req.session.selectedGroup.title, 'events.title': req.body.selectedEvent.title, 'events.created': req.body.selectedEvent.created}, {$push: {'events.$.votings': {'title': req.body.newVotingName, 'created': new Date()}} }, function(err, doc) {
+                    GroupVotings.update({groupName: req.session.selectedGroup.title, 'events.title': req.body.selectedEvent.title, 'events.created': req.body.selectedEvent.created}, {$push: {'events.$.votings': {'title': req.body.newVotingName, 'votingType': req.body.votingType, 'created': new Date()}} }, function(err, doc) {
                         if(err) return res.send("AddVoting(): " + err);
-                        res.send("Neue Abstimmung wurde zum Event hinzugefügt.");
+                        res.send("Neue Abstimmung/Post wurde zum Event hinzugefügt.");
                         updateUserMessageOfGroupOrEvent(req.session.username, req.session.selectedGroup, req.body.selectedEvent, req.body.newVotingName, db.MessageType.VOTING_NEW);
                     });
                 } else {
                     // Should not happen, but anyway:
-                    GroupVotings.update({groupName: req.session.selectedGroup.title}, {$push: {'events': {'title': req.body.selectedEvent.title, 'created': req.body.selectedEvent.created, 'votings': {'title': req.body.newVotingName, 'created': new Date()}}} }, function(err, doc) { 
+                    GroupVotings.update({groupName: req.session.selectedGroup.title}, {$push: {'events': {'title': req.body.selectedEvent.title, 'created': req.body.selectedEvent.created, 'votings': {'title': req.body.newVotingName, 'votingType': req.body.votingType, 'created': new Date()}}} }, function(err, doc) { 
                         if(err) return res.send("AddVoting(): " + err);
-                        res.send("Erste Abstimmung wurde zum bestehenden Event hinzugefügt.");
+                        res.send("Erste Abstimmung/Post wurde zum bestehenden Event hinzugefügt.");
                         updateUserMessageOfGroupOrEvent(req.session.username, req.session.selectedGroup, req.body.selectedEvent, req.body.newVotingName, db.MessageType.VOTING_NEW);
                     });
                 }
@@ -568,7 +568,8 @@ router.post('/addVoting', function(req, res) {
                         title: req.body.selectedEvent.title,
                         created: req.body.selectedEvent.created,
                         votings: {
-                            title: req.body.newVotingName, 
+                            title: req.body.newVotingName,
+                            votingType: req.body.votingType,
                             created: new Date()
                         }
                     }

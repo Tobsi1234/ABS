@@ -56,7 +56,7 @@ var votingSchema = mongoose.Schema({
         votings: [{
             title: String,
             created: Date,
-            votingType: Number,
+            votingType: Number, // NULL or 0: Basic voting, 1: Advanced voting, 2: Posting
             result: {
                 title: String, 
                 quantity: Number
