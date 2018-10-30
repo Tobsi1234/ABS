@@ -1,3 +1,8 @@
+html,body {
+    margin:0;
+    padding:0;
+    height:100%; /* braucht es für die min-height des Containers */
+}
 
 .custom-buttons {
     margin-bottom: 4px;
