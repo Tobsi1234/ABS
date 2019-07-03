@@ -1,6 +1,33 @@
 var express = require('express');
 var passwordHash = require('password-hash');
 
+// auth:
+const jwt = require('express-jwt');
+const jwtAuthz = require('express-jwt-authz');
+const jwksRsa = require('jwks-rsa');
+var request = require("request");
+
+// Authentication middleware. When used, the
+// Access Token must exist and be verified against
+// the Auth0 JSON Web Key Set
+const checkJwt = jwt({
+    // Dynamically provide a signing key
+    // based on the kid in the header and 
+    // the signing keys provided by the JWKS endpoint.
+    secret: jwksRsa.expressJwtSecret({
+      cache: true,
+      rateLimit: true,
+      jwksRequestsPerMinute: 5,
+      jwksUri: `https://wir-haben-hunger.eu.auth0.com/.well-known/jwks.json`
+    }),
+  
+    // Validate the audience and the issuer.
+    audience: 'https://wir-haben-hunger/api/',
+    issuer: `https://wir-haben-hunger.eu.auth0.com/`,
+    algorithms: ['RS256']
+});
+
+
 var router = express.Router();
 
 var mongoose = require('mongoose');
@@ -40,11 +67,52 @@ function checkIfSessionAndGroupNotNull(req) {
         return false;
     }
 }
-    
+
+//login --> only method (currently also /session) which does not require authorization check (obviously) and it's therefore placed before the "router.use"
+router.post('/login', function(req, res) {
+    User.find({username: req.body.username}, function(err, docs) {
+        if(err) res.send("Unknown error.");
+        if(docs == "") {
+            res.send("Username nicht vorhanden.");
+        } else {
+            if(docs[0].status == null || docs[0].status == 0) {
+                if(docs[0].password != null && passwordHash.verify(req.body.password, docs[0].password)) {
+                    req.session.username = docs[0].username;
+                    req.session.selectedGroup = {title: "", status: 0};
+
+                    var options = { method: 'POST',
+                    url: 'https://wir-haben-hunger.eu.auth0.com/oauth/token',
+                    headers: { 'content-type': 'application/json' },
+                    body: '{"client_id":"88la7kIne4wfw6t5Ky9a0CsOXHnaXUrQ","client_secret":"DXfQdDFqBKMCJrwQHsXDkxgx1XK9yqzkhiNBffM7Ds6Uzyd2yHUth7kTV-GWtNYS","audience":"https://wir-haben-hunger/api/","grant_type":"client_credentials"}' };
+
+                    request(options, function (error, response, body) {
+                        if (error) res.send("Access Token konnte nicht erstellt werden.");
+                        var token = JSON.parse(body);
+                        req.session.token = token;
+                        res.send(token);
+                    });
+
+                    //res.sendStatus(200);
+                } else {
+                    res.send("Passwort falsch.");
+                }
+            } else {
+                res.send("User ist noch nicht aktiviert.");
+            }
+            
+        }
+    });
+});
+
+router.post('/session', function(req, res) {
+    res.send([req.session.username, req.session.selectedGroup, req.session.selectedEvent, req.session.token]);
+});
+
+
 // middleware specific to this router
 // authentication, logging, etc.
-router.use(function(req, res, next) {
-  console.log('API access: ', new Date() );
+router.use(checkJwt, function(req, res, next) {
+  console.log('API access for ' + req.path + ' : ', new Date());
   next();
 });
 
@@ -66,10 +134,6 @@ router.get('/groupVotings', function(req, res) {
 // Get all chats
 router.get('/chat', function(req, res) {
     Chat.find({}, function(err, docs) { res.send(docs);});
-});
-
-router.post('/session', function(req, res) {
-    res.send([req.session.username, req.session.selectedGroup, req.session.selectedEvent]);
 });
 
 //Create new user
@@ -105,29 +169,6 @@ router.post('/user', function(req, res) {
             });
         } else {
             res.send("Username bereits vorhanden.");
-        }
-    });
-});
-
-//login
-router.post('/login', function(req, res) {
-    User.find({username: req.body.username}, function(err, docs) {
-        if(err) res.send("Unknown error.");
-        if(docs == "") {
-            res.send("Username nicht vorhanden.");
-        } else {
-            if(docs[0].status == null || docs[0].status == 0) {
-                if(docs[0].password != null && passwordHash.verify(req.body.password, docs[0].password)) {
-                    req.session.username = docs[0].username;
-                    req.session.selectedGroup = {title: "", status: 0};
-                    res.sendStatus(200);
-                } else {
-                    res.send("Passwort falsch.");
-                }
-            } else {
-                res.send("User ist noch nicht aktiviert.");
-            }
-            
         }
     });
 });

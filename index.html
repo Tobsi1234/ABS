@@ -83,6 +83,7 @@
                 data: {
                     currentSite: 'home',
                     sessionUser: '',
+                    sessionToken: '',
                     selectedGroup: '',
                     selectedEvent: '',
                     jumpToName: null,
@@ -97,8 +98,9 @@
 
                         if(loginUser != '' && password != '') {
                             $.post("/api/login", {username: loginUser, password: password}, function(result){
-                                if(result == "OK") {
+                                if(result.access_token != null) {
                                     navbar.sessionUser = loginUser;
+                                    navbar.sessionToken = result.access_token;
                                     navbar.selectedGroup = {title: "", status: 0};
                                     indexSite.sessionUser = loginUser;
                                     indexSite.selectedGroup = {title: "", status: 0};
@@ -106,6 +108,11 @@
                                     // set /home specific data
                                     homeView.sessionUser = loginUser;
                                     homeView.getActivitiesAndTasksForUser();
+                                    $.ajaxSetup({
+                                        headers: {
+                                            'authorization': "Bearer " + navbar.sessionToken
+                                        }
+                                    });
                                     //location.reload();
                                     $.post("/api/handleJoin", {join: ""}, function(result){
                                         notify(result);
@@ -199,6 +206,12 @@
                         navbar.sessionUser = result[0];
                         navbar.selectedGroup = result[1];
                         navbar.selectedEvent = result[2];
+                        navbar.sessionToken = result[3].access_token;
+                        $.ajaxSetup({
+                            headers: {
+                                'authorization': "Bearer " + navbar.sessionToken
+                            }
+                        });
                         indexSite.sessionUser = navbar.sessionUser;
                         indexSite.loadMessages();
                         if(navbar.selectedGroup != null && navbar.selectedGroup.title != "") {

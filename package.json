@@ -7,7 +7,10 @@
   "dependencies": {
     "body-parser": "^1.18.2",
     "express": "^4.16.3",
+    "express-jwt": "^5.3.1",
+    "express-jwt-authz": "^2.3.1",
     "express-session": "^1.15.6",
+    "jwks-rsa": "^1.5.1",
     "mongoose": "^5.0.15",
     "nodemailer": "^4.6.8",
     "password-hash": "^1.2.2",
