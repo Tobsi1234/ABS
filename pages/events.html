@@ -11,6 +11,7 @@
                 </select>
                 <br><br>
             </div>
+            <h4 class="display-4">Neue Veranstaltung erstellen</h4>
             <input v-model="newEventName" class="responsive-input" placeholder="Name des Events eingeben">
             <button v-on:click="addEvent" class="btn btn-outline-primary btn-sm custom-buttons responsive-button">Neues Event erstellen</button><br><br>
             <h4 v-if="futureEvents.length > 0" class="display-4">Bevorstehende Veranstaltungen</h4>
